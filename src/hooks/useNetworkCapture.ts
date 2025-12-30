@@ -18,7 +18,9 @@ export function useNetworkCapture(addRequest: AddRequestFn, clearRequests: () =>
     (har: chrome.devtools.network.Request) => {
       const resourceType = har._resourceType?.toLowerCase() ?? "";
       
-      if (resourceType !== "xhr" && resourceType !== "fetch") {
+      // Capture XHR, fetch, and document requests
+      const allowedTypes = ["xhr", "fetch", "document"];
+      if (!allowedTypes.includes(resourceType)) {
         return;
       }
 

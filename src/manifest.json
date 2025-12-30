@@ -10,6 +10,8 @@
   },
   "devtools_page": "src/devtools/devtools.html",
   "permissions": ["storage"],
+  "{{chrome}}.host_permissions": ["<all_urls>"],
+  "{{firefox}}.permissions": ["storage", "<all_urls>"],
   "background": {
     "{{chrome}}.service_worker": "src/background.ts",
     "{{firefox}}.scripts": ["src/background.ts"]

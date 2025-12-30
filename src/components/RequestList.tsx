@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Clock, FileJson, Key } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ChevronDown, ChevronRight, Clock, FileJson, Key, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +14,9 @@ interface RequestListProps {
   jwtHeaders: string[];
   viewMode: "grouped" | "flat";
 }
+
+type SortOption = "time-desc" | "time-asc" | "method" | "status";
+type MethodFilter = "ALL" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
 
 function getStatusDotColor(status: number) {
   if (status >= 200 && status < 300) return "bg-green-500";
@@ -76,6 +79,29 @@ function RequestRow({
   );
 }
 
+function getUniqueMethods(requests: CapturedRequest[]): string[] {
+  const methods = new Set(requests.map((r) => r.method));
+  return Array.from(methods).sort();
+}
+
+// Get the "worst" status color for a group (prioritize errors)
+function getGroupStatusDotColor(requests: CapturedRequest[]): string {
+  let hasError = false;
+  let hasWarning = false;
+  let hasRedirect = false;
+  
+  for (const r of requests) {
+    if (r.status >= 500) hasError = true;
+    else if (r.status >= 400) hasWarning = true;
+    else if (r.status >= 300) hasRedirect = true;
+  }
+  
+  if (hasError) return "bg-red-500";
+  if (hasWarning) return "bg-yellow-500";
+  if (hasRedirect) return "bg-blue-400";
+  return "bg-green-500";
+}
+
 function GroupedView({
   groups,
   selectedRequest,
@@ -98,6 +124,8 @@ function GroupedView({
       {groups.map((group) => {
         const isExpanded = expandedGroups.has(group.pattern);
         const hasMultiple = group.count > 1;
+        const methods = getUniqueMethods(group.requests);
+        const statusColor = getGroupStatusDotColor(group.requests);
 
         return (
           <div key={group.pattern}>
@@ -113,9 +141,12 @@ function GroupedView({
               ) : (
                 <div className="w-4" />
               )}
+              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusColor)} />
               <span className="flex items-center gap-1.5 text-xs font-mono">
-                {hasMultiple && group.count >= 3 && <span className="w-2 h-2 rounded-full bg-yellow-500" />}
                 {group.count}x
+              </span>
+              <span className="text-xs text-muted-foreground font-mono w-16 shrink-0">
+                {methods.join(", ")}
               </span>
               <span className="flex-1 truncate font-mono text-xs" title={group.pattern}>
                 {new URL(group.pattern).pathname}
@@ -175,6 +206,79 @@ export function RequestList({
   jwtHeaders,
   viewMode,
 }: RequestListProps) {
+  const [search, setSearch] = useState("");
+  const [methodFilter, setMethodFilter] = useState<MethodFilter>("ALL");
+  const [sortBy, setSortBy] = useState<SortOption>("time-desc");
+
+  // Filter and sort requests
+  const filteredRequests = useMemo(() => {
+    let result = [...requests];
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter((r) => 
+        r.url.toLowerCase().includes(searchLower) ||
+        r.method.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply method filter
+    if (methodFilter !== "ALL") {
+      result = result.filter((r) => r.method === methodFilter);
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "time-desc":
+          return b.startTime - a.startTime;
+        case "time-asc":
+          return a.startTime - b.startTime;
+        case "method":
+          return a.method.localeCompare(b.method);
+        case "status":
+          return a.status - b.status;
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [requests, search, methodFilter, sortBy]);
+
+  // Filter groups based on search and method filter
+  const filteredGroups = useMemo(() => {
+    if (!search && methodFilter === "ALL") return groups;
+
+    return groups
+      .map((group) => {
+        let filteredReqs = group.requests;
+
+        if (search) {
+          const searchLower = search.toLowerCase();
+          filteredReqs = filteredReqs.filter((r) =>
+            r.url.toLowerCase().includes(searchLower) ||
+            r.method.toLowerCase().includes(searchLower)
+          );
+        }
+
+        if (methodFilter !== "ALL") {
+          filteredReqs = filteredReqs.filter((r) => r.method === methodFilter);
+        }
+
+        if (filteredReqs.length === 0) return null;
+
+        return {
+          ...group,
+          requests: filteredReqs,
+          count: filteredReqs.length,
+          avgDuration: filteredReqs.reduce((sum, r) => sum + r.duration, 0) / filteredReqs.length,
+        };
+      })
+      .filter(Boolean) as RequestGroup[];
+  }, [groups, search, methodFilter]);
+
   if (requests.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
@@ -186,22 +290,76 @@ export function RequestList({
   }
 
   return (
-    <ScrollArea className="h-full">
-      {viewMode === "grouped" ? (
-        <GroupedView
-          groups={groups}
-          selectedRequest={selectedRequest}
-          onSelectRequest={onSelectRequest}
-          jwtHeaders={jwtHeaders}
-        />
-      ) : (
-        <FlatView
-          requests={requests}
-          selectedRequest={selectedRequest}
-          onSelectRequest={onSelectRequest}
-          jwtHeaders={jwtHeaders}
-        />
-      )}
-    </ScrollArea>
+    <div className="h-full flex flex-col">
+      {/* Search and Filter Bar */}
+      <div className="px-2 py-2 border-b border-border space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search endpoints..."
+              className="w-full pl-7 pr-7 py-1 text-xs bg-background border border-border rounded"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+              >
+                <X className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={methodFilter}
+            onChange={(e) => setMethodFilter(e.target.value as MethodFilter)}
+            className="px-2 py-1 text-xs bg-background border border-border rounded"
+          >
+            <option value="ALL">All Methods</option>
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="PATCH">PATCH</option>
+            <option value="DELETE">DELETE</option>
+            <option value="OPTIONS">OPTIONS</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="px-2 py-1 text-xs bg-background border border-border rounded"
+          >
+            <option value="time-desc">Newest First</option>
+            <option value="time-asc">Oldest First</option>
+            <option value="method">By Method</option>
+            <option value="status">By Status</option>
+          </select>
+          <span className="text-xs text-muted-foreground ml-auto">
+            {filteredRequests.length} / {requests.length}
+          </span>
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1">
+        {viewMode === "grouped" ? (
+          <GroupedView
+            groups={filteredGroups}
+            selectedRequest={selectedRequest}
+            onSelectRequest={onSelectRequest}
+            jwtHeaders={jwtHeaders}
+          />
+        ) : (
+          <FlatView
+            requests={filteredRequests}
+            selectedRequest={selectedRequest}
+            onSelectRequest={onSelectRequest}
+            jwtHeaders={jwtHeaders}
+          />
+        )}
+      </ScrollArea>
+    </div>
   );
 }
