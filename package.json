@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "build:prod": "NODE_ENV=production npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -72,6 +73,7 @@
     "typescript": "~5.6.3",
     "vite": "^5.0.0",
     "vite-plugin-web-extension": "^4.0.0",
+    "vite-plugin-zip-file": "^4.1.1",
     "webextension-polyfill": "^0.10.0"
   }
 }

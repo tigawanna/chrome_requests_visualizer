@@ -4,6 +4,12 @@ import tailwindcss from "@tailwindcss/vite";
 import webExtension, { readJsonFile } from "vite-plugin-web-extension";
 import path from "path";
 
+import { viteZip } from "vite-plugin-zip-file";
+import { fileURLToPath } from "url";
+import { env } from "node:process";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+
 function generateManifest() {
   const manifest = readJsonFile("src/manifest.json");
   const pkg = readJsonFile("package.json");
@@ -29,6 +35,12 @@ export default defineConfig({
     webExtension({
       manifest: generateManifest,
       additionalInputs: ["src/devtools/panel.html"],
+    }),
+    viteZip({
+      folderPath: path.resolve(__dirname, "dist"),
+      outPath: path.resolve(__dirname),
+      zipName: "dist.zip",
+      enabled: env.NODE_ENV === "production" ? true : false,
     }),
   ],
   resolve: {
