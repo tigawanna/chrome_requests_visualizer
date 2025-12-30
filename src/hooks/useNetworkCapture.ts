@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef } from "react";
 import type { CapturedRequest } from "@/types/request";
 
 type AddRequestFn = (request: Omit<CapturedRequest, "id" | "urlPattern">) => CapturedRequest;
+type OnNavigateFn = (newUrl: string) => void;
 
 function parseHeaders(headers: chrome.devtools.network.Request["request"]["headers"]): Record<string, string> {
   const result: Record<string, string> = {};
@@ -11,8 +12,36 @@ function parseHeaders(headers: chrome.devtools.network.Request["request"]["heade
   return result;
 }
 
-export function useNetworkCapture(addRequest: AddRequestFn, clearRequests: () => void) {
+function getCurrentPageUrl(): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof chrome !== "undefined" && chrome.devtools?.inspectedWindow) {
+      chrome.devtools.inspectedWindow.eval(
+        "window.location.href",
+        (result, error) => {
+          if (error || typeof result !== "string") {
+            resolve("unknown");
+          } else {
+            resolve(result);
+          }
+        }
+      );
+    } else {
+      resolve("unknown");
+    }
+  });
+}
+
+export function useNetworkCapture(addRequest: AddRequestFn, onNavigate: OnNavigateFn) {
   const isCapturing = useRef(false);
+  const currentPageUrl = useRef<string>("unknown");
+
+  // Get initial page URL
+  useEffect(() => {
+    getCurrentPageUrl().then((url) => {
+      currentPageUrl.current = url;
+      onNavigate(url);
+    });
+  }, [onNavigate]);
 
   const handleRequest = useCallback(
     (har: chrome.devtools.network.Request) => {
@@ -39,6 +68,7 @@ export function useNetworkCapture(addRequest: AddRequestFn, clearRequests: () =>
         size: har.response.content.size,
         type: resourceType,
         initiator: typeof har._initiator === "object" ? har._initiator?.type ?? "unknown" : "unknown",
+        pageUrl: currentPageUrl.current,
       };
 
       har.getContent((content) => {
@@ -49,9 +79,10 @@ export function useNetworkCapture(addRequest: AddRequestFn, clearRequests: () =>
     [addRequest]
   );
 
-  const handleNavigate = useCallback(() => {
-    clearRequests();
-  }, [clearRequests]);
+  const handleNavigate = useCallback((newUrl: string) => {
+    currentPageUrl.current = newUrl;
+    onNavigate(newUrl);
+  }, [onNavigate]);
 
   useEffect(() => {
     if (isCapturing.current) return;

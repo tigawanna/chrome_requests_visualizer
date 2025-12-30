@@ -4,6 +4,7 @@ export interface UserSettings {
   id: string;
   jwtHeaders: string[];
   theme: "light" | "dark" | "system";
+  sessionRetentionHours: number;
 }
 
 const db = new Dexie("RequestVisualizerSettings") as Dexie & {
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   id: "user-settings",
   jwtHeaders: ["Authorization"],
   theme: "system",
+  sessionRetentionHours: 24,
 };
 
 export async function getSettings(): Promise<UserSettings> {

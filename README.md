@@ -1,32 +1,84 @@
 # Chrome Requests Visualizer
 
-A Chrome DevTools extension for visualizing network requests, detecting N+1 query patterns, and decoding JWTs. Built for developers who want to debug API calls, identify performance bottlenecks, and inspect authentication tokens.
+A Chrome DevTools extension for visualizing network requests, detecting N+1 query patterns, replaying requests, and decoding JWTs. Built for developers who want to debug API calls, identify performance bottlenecks, and inspect authentication tokens.
 
-## What This Extension Does
+<!-- TODO: Add hero screenshot -->
+![Hero Screenshot](screenshots/hero.png)
+
+## ✨ Features
 
 ### 🔍 Network Request Monitoring
-Captures all XHR and Fetch requests made by the current page. Unlike the built-in Network tab, this extension focuses specifically on API calls and provides specialized views for debugging.
+Captures XHR, Fetch, and Document requests made by the current page. Unlike the built-in Network tab, this extension focuses specifically on API calls and provides specialized views for debugging.
+
+- **Status indicators** - Color-coded dots show request status at a glance
+- **Search & Filter** - Filter by URL, method (GET, POST, etc.), and sort by time/status
+- **Request count** - See filtered vs total request counts
+
+<!-- TODO: Add request list screenshot -->
+![Request List](screenshots/request-list.png)
 
 ### 🔗 N+1 Query Detection
-Automatically groups requests by URL pattern. For example:
-- `/api/users/1`, `/api/users/2`, `/api/users/3` → grouped as `/api/users/:id` (3x)
-- Helps identify N+1 query problems where your frontend makes multiple sequential requests that could be batched
+Automatically groups requests by URL pattern to identify N+1 query problems:
 
-### 📊 Waterfall Visualization
-See a timeline of all requests showing:
-- When each request started relative to others
-- Duration of each request
-- Identify sequential requests that could be parallelized
+- `/api/users/1`, `/api/users/2`, `/api/users/3` → grouped as `/api/users/:id` (3x)
+- Smart pattern detection for IDs, UUIDs, and MongoDB ObjectIDs
+- Expandable groups to see individual requests
+
+<!-- TODO: Add N+1 detection screenshot -->
+![N+1 Detection](screenshots/n1-detection.png)
+
+### 🌐 Session Persistence
+Track requests across page navigations within a browsing session:
+
+- **Domain grouping** - Requests organized by domain (e.g., `github.com`, `api.github.com`)
+- **Page grouping** - Further grouped by page path (`/`, `/repos`, `/settings`)
+- **Copy as JSON** - Export domain or page request summaries
+- **Retention settings** - Configure how long to keep sessions (1 hour to 1 week)
+
+<!-- TODO: Add sessions view screenshot -->
+![Sessions View](screenshots/sessions-view.png)
+
+### 🔄 Request Replay
+Replay any captured request with full editing capabilities:
+
+- **Edit URL, method, headers, and body** before replaying
+- **Cross-origin support** - Requests proxied through background script
+- **Detailed error reporting** - Clear error messages with suggestions
+- **Response viewer** - See status, headers, and body of replay response
+
+<!-- TODO: Add request replay screenshot -->
+![Request Replay](screenshots/request-replay.png)
 
 ### 🔐 JWT Token Decoder
-Automatically detects JWT tokens in request headers and decodes them showing:
-- Header (algorithm, type)
-- Payload (claims, expiration, issued at)
-- Expiration status (valid/expired)
-- Configurable header names (default: `Authorization`)
+Automatically detects and decodes JWT tokens in request headers:
 
-### 💾 Session-Based Storage
-Requests are stored in memory and automatically cleared on page navigation. This keeps the tool lightweight and focused on debugging the current page load.
+- **Header & Payload** - Decoded and formatted JSON
+- **Expiration status** - Visual indicator for valid/expired tokens
+- **Configurable headers** - Scan `Authorization`, `X-Auth-Token`, or custom headers
+
+<!-- TODO: Add JWT decoder screenshot -->
+![JWT Decoder](screenshots/jwt-decoder.png)
+
+### 📋 Copy as JSON
+Export request data for documentation or debugging:
+
+- **Full request details** - URL, method, status, headers, body, response
+- **Truncated for readability** - Large arrays limited to 5 items, strings to 10 lines
+- **Compact headers** - Formatted as `["key: value"]` array
+- **Formatted output** - Pretty-printed JSON ready for Slack/README
+
+<!-- TODO: Add copy JSON screenshot -->
+![Copy JSON](screenshots/copy-json.png)
+
+### ⚙️ Settings
+Customize the extension behavior:
+
+- **Session retention** - 1 hour, 6 hours, 12 hours, 24 hours, 48 hours, 3 days, or 1 week
+- **JWT headers** - Configure which headers to scan for JWT tokens
+- **Theme** - Light, dark, or system preference
+
+<!-- TODO: Add settings screenshot -->
+![Settings](screenshots/settings.png)
 
 ---
 
@@ -95,22 +147,30 @@ After making code changes:
 |---------|-------------|
 | **Grouped View** | Groups similar URLs together with count badges (e.g., `3x /api/users/:id`) |
 | **Flat View** | Shows all requests chronologically |
+| **Search** | Filter requests by URL or method |
+| **Method Filter** | Show only GET, POST, PUT, PATCH, DELETE, or OPTIONS |
+| **Sort Options** | Sort by newest, oldest, method, or status |
 | **Request Details** | Click any request to see headers, body, response, and JWT info |
-| **Resizable Panels** | Drag the divider between list and details to resize |
+| **Copy JSON** | Export full request details as formatted JSON |
+| **Replay** | Re-send any request with editable parameters |
 
-### Waterfall Tab
+### Sessions Tab
 
-Visual timeline showing request timing. Color-coded by status:
-- 🟢 Green: 2xx success
-- 🔵 Blue: 3xx redirect  
-- 🟡 Yellow: 4xx client error
-- 🔴 Red: 5xx server error
+| Feature | Description |
+|---------|-------------|
+| **Domain Groups** | Requests organized by domain with total counts |
+| **Page Groups** | Within each domain, grouped by page path |
+| **Expandable** | Click to expand/collapse domains and pages |
+| **Copy Summary** | Export domain or page requests as JSON |
+| **Clear Controls** | Clear individual pages or entire domains |
 
 ### Settings Tab
 
-Configure which HTTP headers to scan for JWT tokens:
-- Default: `Authorization`
-- Add custom headers like `X-Auth-Token`, `X-JWT`, etc.
+| Setting | Description |
+|---------|-------------|
+| **Session Retention** | How long to keep request history (1 hour to 1 week) |
+| **JWT Headers** | Which headers to scan for JWT tokens |
+| **Theme** | Light, dark, or system preference |
 
 ---
 
@@ -205,24 +265,26 @@ src/
 │   │   ├── resizable.tsx
 │   │   ├── scroll-area.tsx
 │   │   └── tabs.tsx
-│   ├── RequestList.tsx    # Request list with grouping
-│   ├── RequestDetail.tsx  # Request detail view
-│   ├── Waterfall.tsx      # Timeline visualization
+│   ├── RequestList.tsx    # Request list with grouping, search, filter
+│   ├── RequestDetail.tsx  # Request detail view with copy JSON
+│   ├── ReplayRequest.tsx  # Request replay with editing
+│   ├── SessionsView.tsx   # Domain/page grouped sessions
 │   ├── JWTDecoder.tsx     # JWT token decoder
-│   └── Settings.tsx       # Settings panel
+│   └── Settings.tsx       # Settings panel (retention, JWT headers)
 ├── hooks/                 # Custom React hooks
-│   ├── useRequestStore.ts # Request state management
+│   ├── useRequestStore.ts # Request state with session management
 │   └── useNetworkCapture.ts # Chrome DevTools network API
 ├── db/                    # Database layer
 │   └── settings.ts        # Dexie.js settings store
 ├── lib/                   # Utilities
 │   ├── utils.ts           # Tailwind cn() helper
-│   └── jwt.ts             # JWT decoding utilities
+│   ├── jwt.ts             # JWT decoding utilities
+│   └── clipboard.ts       # Clipboard API with fallback
 ├── types/                 # TypeScript types
-│   └── request.ts         # Request/Response types
+│   └── request.ts         # Request, PageSession, DomainGroup types
 ├── styles/                # Global styles
 │   └── globals.css        # Tailwind + theme variables
-├── background.ts          # Service worker
+├── background.ts          # Service worker with fetch proxy
 └── manifest.json          # Extension manifest
 ```
 

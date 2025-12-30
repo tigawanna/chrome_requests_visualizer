@@ -15,6 +15,7 @@ export interface CapturedRequest {
   type: string;
   urlPattern: string;
   initiator: string;
+  pageUrl: string;
 }
 
 export interface RequestGroup {
@@ -22,4 +23,19 @@ export interface RequestGroup {
   requests: CapturedRequest[];
   count: number;
   avgDuration: number;
+}
+
+export interface PageSession {
+  id: string;
+  pageUrl: string;
+  domain: string;
+  path: string;
+  timestamp: number;
+  requests: CapturedRequest[];
+}
+
+export interface DomainGroup {
+  domain: string;
+  pages: PageSession[];
+  totalRequests: number;
 }

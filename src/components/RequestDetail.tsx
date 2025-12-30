@@ -76,16 +76,8 @@ function HeadersTable({ headers }: { headers: Record<string, string> }) {
   );
 }
 
-function CodeBlock({ content, language }: { content: string; language?: string }) {
+function CodeBlock({ content, language, title }: { content: string; language?: string; title?: string }) {
   const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    const success = await copyToClipboard(content);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
 
   let formatted = content;
   if (language === "json") {
@@ -96,17 +88,29 @@ function CodeBlock({ content, language }: { content: string; language?: string }
     }
   }
 
+  const handleCopy = async () => {
+    const success = await copyToClipboard(formatted);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
-    <div className="relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-2 right-2 h-6 w-6"
-        onClick={handleCopy}
-      >
-        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-      </Button>
-      <pre className="bg-muted p-3 rounded-md text-xs font-mono overflow-auto max-h-96">
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
+        <span className="text-xs font-medium text-muted-foreground">{title || "Body"}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={handleCopy}
+        >
+          {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+          {copied ? "Copied!" : "Copy"}
+        </Button>
+      </div>
+      <pre className="bg-muted/30 p-4 text-xs font-mono overflow-auto max-h-96">
         {formatted}
       </pre>
     </div>
@@ -133,8 +137,8 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-3 border-b border-border space-y-2">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="p-3 border-b border-border space-y-2 shrink-0">
         <div className="flex items-center gap-2">
           <Badge variant="outline">{request.method}</Badge>
           <span className="font-mono text-sm truncate flex-1" title={request.url}>
@@ -159,49 +163,51 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col">
-        <TabsList className="mx-3 mt-2">
+      <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col overflow-hidden">
+        <TabsList className="mx-3 mt-2 shrink-0">
           <TabsTrigger value="headers">Headers</TabsTrigger>
           <TabsTrigger value="request">Request</TabsTrigger>
           <TabsTrigger value="response">Response</TabsTrigger>
           {jwtInfo && <TabsTrigger value="jwt">JWT</TabsTrigger>}
         </TabsList>
 
-        <ScrollArea className="flex-1 p-3">
-          <TabsContent value="headers" className="mt-0">
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold mb-2">Request Headers</h4>
-                <HeadersTable headers={request.requestHeaders} />
+        <ScrollArea className="flex-1 overflow-hidden">
+          <div className="p-3 pb-8">
+            <TabsContent value="headers" className="mt-0">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Request Headers</h4>
+                  <HeadersTable headers={request.requestHeaders} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Response Headers</h4>
+                  <HeadersTable headers={request.responseHeaders} />
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-semibold mb-2">Response Headers</h4>
-                <HeadersTable headers={request.responseHeaders} />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="request" className="mt-0">
-            {request.requestBody ? (
-              <CodeBlock content={request.requestBody} language="json" />
-            ) : (
-              <p className="text-muted-foreground text-sm">No request body</p>
-            )}
-          </TabsContent>
-
-          <TabsContent value="response" className="mt-0">
-            {request.responseBody ? (
-              <CodeBlock content={request.responseBody} language="json" />
-            ) : (
-              <p className="text-muted-foreground text-sm">No response body</p>
-            )}
-          </TabsContent>
-
-          {jwtInfo && (
-            <TabsContent value="jwt" className="mt-0">
-              <JWTDecoder token={jwtInfo.token} headerName={jwtInfo.header} />
             </TabsContent>
-          )}
+
+            <TabsContent value="request" className="mt-0">
+              {request.requestBody ? (
+                <CodeBlock content={request.requestBody} language="json" title="Request Body" />
+              ) : (
+                <p className="text-muted-foreground text-sm">No request body</p>
+              )}
+            </TabsContent>
+
+            <TabsContent value="response" className="mt-0">
+              {request.responseBody ? (
+                <CodeBlock content={request.responseBody} language="json" title="Response Body" />
+              ) : (
+                <p className="text-muted-foreground text-sm">No response body</p>
+              )}
+            </TabsContent>
+
+            {jwtInfo && (
+              <TabsContent value="jwt" className="mt-0">
+                <JWTDecoder token={jwtInfo.token} headerName={jwtInfo.header} />
+              </TabsContent>
+            )}
+          </div>
         </ScrollArea>
       </Tabs>
     </div>

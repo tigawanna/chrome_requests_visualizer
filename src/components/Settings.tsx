@@ -1,15 +1,27 @@
 import { useState } from "react";
-import { Plus, X, Save } from "lucide-react";
+import { Plus, X, Save, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SettingsProps {
   jwtHeaders: string[];
-  onSave: (headers: string[]) => void;
+  sessionRetentionHours: number;
+  onSave: (settings: { jwtHeaders: string[]; sessionRetentionHours: number }) => void;
 }
 
-export function Settings({ jwtHeaders, onSave }: SettingsProps) {
+const RETENTION_OPTIONS = [
+  { value: 1, label: "1 hour" },
+  { value: 6, label: "6 hours" },
+  { value: 12, label: "12 hours" },
+  { value: 24, label: "24 hours" },
+  { value: 48, label: "48 hours" },
+  { value: 72, label: "3 days" },
+  { value: 168, label: "1 week" },
+];
+
+export function Settings({ jwtHeaders, sessionRetentionHours, onSave }: SettingsProps) {
   const [headers, setHeaders] = useState<string[]>(jwtHeaders);
+  const [retentionHours, setRetentionHours] = useState(sessionRetentionHours);
   const [newHeader, setNewHeader] = useState("");
 
   const addHeader = () => {
@@ -24,12 +36,33 @@ export function Settings({ jwtHeaders, onSave }: SettingsProps) {
   };
 
   const handleSave = () => {
-    onSave(headers);
+    onSave({ jwtHeaders: headers, sessionRetentionHours: retentionHours });
   };
 
   return (
     <ScrollArea className="h-full p-4">
       <div className="space-y-6 max-w-md">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Session Retention</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            How long to keep captured request sessions. Older sessions will be automatically cleaned up.
+          </p>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <select
+              value={retentionHours}
+              onChange={(e) => setRetentionHours(Number(e.target.value))}
+              className="flex-1 px-3 py-2 text-sm border border-input rounded-md bg-background"
+            >
+              {RETENTION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div>
           <h3 className="text-lg font-semibold mb-2">JWT Header Configuration</h3>
           <p className="text-sm text-muted-foreground mb-4">
