@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trash2, List, Layers, BarChart3, Settings as SettingsIcon } from "lucide-react";
+import { Trash2, List, Layers, BarChart3, Settings as SettingsIcon, Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -11,14 +11,17 @@ import { RequestList } from "@/components/RequestList";
 import { RequestDetail } from "@/components/RequestDetail";
 import { Waterfall } from "@/components/Waterfall";
 import { Settings } from "@/components/Settings";
+import { ThemeDebug } from "@/components/ThemeDebug";
 import { useRequestStore } from "@/hooks/useRequestStore";
 import { useNetworkCapture } from "@/hooks/useNetworkCapture";
 import { getSettings, updateSettings, DEFAULT_SETTINGS } from "@/db/settings";
+import { useTheme } from "next-themes";
 
 export default function App() {
   const [mainTab, setMainTab] = useState("requests");
   const [viewMode, setViewMode] = useState<"grouped" | "flat">("grouped");
   const [jwtHeaders, setJwtHeaders] = useState<string[]>(DEFAULT_SETTINGS.jwtHeaders);
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   const {
     requests,
@@ -72,6 +75,14 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system")}
+            title={theme === "system" ? "Using system theme (click for light)" : theme === "light" ? "Light mode (click for dark)" : "Dark mode (click for system)"}
+          >
+            {theme === "system" ? <Monitor className="w-4 h-4" /> : theme === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setMainTab(mainTab === "settings" ? "requests" : "settings")}
             title="Settings"
           >
@@ -88,6 +99,7 @@ export default function App() {
             Waterfall
           </TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="debug">🐛 Debug</TabsTrigger>
         </TabsList>
 
         <TabsContent value="requests" className="flex-1 overflow-hidden mt-0">
@@ -125,6 +137,10 @@ export default function App() {
 
         <TabsContent value="settings" className="flex-1 overflow-hidden mt-0">
           <Settings jwtHeaders={jwtHeaders} onSave={handleSaveSettings} />
+        </TabsContent>
+
+        <TabsContent value="debug" className="flex-1 overflow-auto mt-0">
+          <ThemeDebug />
         </TabsContent>
       </Tabs>
     </div>

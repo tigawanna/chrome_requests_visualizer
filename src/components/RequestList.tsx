@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Clock, FileJson, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CapturedRequest, RequestGroup } from "@/types/request";
@@ -16,12 +15,12 @@ interface RequestListProps {
   viewMode: "grouped" | "flat";
 }
 
-function getStatusColor(status: number) {
-  if (status >= 200 && status < 300) return "success";
-  if (status >= 300 && status < 400) return "secondary";
-  if (status >= 400 && status < 500) return "warning";
-  if (status >= 500) return "destructive";
-  return "outline";
+function getStatusDotColor(status: number) {
+  if (status >= 200 && status < 300) return "bg-green-500";
+  if (status >= 300 && status < 400) return "bg-blue-400";
+  if (status >= 400 && status < 500) return "bg-yellow-500";
+  if (status >= 500) return "bg-red-500";
+  return "bg-gray-400";
 }
 
 function formatDuration(ms: number) {
@@ -57,9 +56,10 @@ function RequestRow({
       )}
       onClick={onClick}
     >
-      <Badge variant={getStatusColor(request.status)} className="w-12 justify-center text-xs">
+      <span className="flex items-center gap-1.5 w-12 justify-center text-xs font-mono">
+        <span className={cn("w-2 h-2 rounded-full", getStatusDotColor(request.status))} />
         {request.status}
-      </Badge>
+      </span>
       <span className="w-14 text-muted-foreground font-mono text-xs">{request.method}</span>
       <span className="flex-1 truncate font-mono text-xs" title={request.url}>
         {new URL(request.url).pathname}
@@ -113,9 +113,10 @@ function GroupedView({
               ) : (
                 <div className="w-4" />
               )}
-              <Badge variant={hasMultiple && group.count >= 3 ? "warning" : "outline"} className="text-xs">
+              <span className="flex items-center gap-1.5 text-xs font-mono">
+                {hasMultiple && group.count >= 3 && <span className="w-2 h-2 rounded-full bg-yellow-500" />}
                 {group.count}x
-              </Badge>
+              </span>
               <span className="flex-1 truncate font-mono text-xs" title={group.pattern}>
                 {new URL(group.pattern).pathname}
               </span>
