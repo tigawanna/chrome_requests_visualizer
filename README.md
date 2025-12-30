@@ -3,7 +3,8 @@
 A Chrome DevTools extension for visualizing network requests, detecting N+1 query patterns, replaying requests, and decoding JWTs. Built for developers who want to debug API calls, identify performance bottlenecks, and inspect authentication tokens.
 
 <!-- TODO: Add hero screenshot -->
-![Hero Screenshot](screenshots/hero.png)
+<img width="1047" height="891" alt="image" src="https://github.com/user-attachments/assets/188e2ed2-dbc5-404d-944b-2eeba9508045" />
+
 
 ## ✨ Features
 
@@ -15,7 +16,8 @@ Captures XHR, Fetch, and Document requests made by the current page. Unlike the 
 - **Request count** - See filtered vs total request counts
 
 <!-- TODO: Add request list screenshot -->
-![Request List](screenshots/request-list.png)
+<img width="1047" height="891" alt="image" src="https://github.com/user-attachments/assets/8272d2a0-cc9c-4b89-b3db-b67142ad0b68" />
+
 
 ### 🔗 N+1 Query Detection
 Automatically groups requests by URL pattern to identify N+1 query problems:
@@ -25,7 +27,7 @@ Automatically groups requests by URL pattern to identify N+1 query problems:
 - Expandable groups to see individual requests
 
 <!-- TODO: Add N+1 detection screenshot -->
-![N+1 Detection](screenshots/n1-detection.png)
+
 
 ### 🌐 Session Persistence
 Track requests across page navigations within a browsing session:
@@ -36,7 +38,8 @@ Track requests across page navigations within a browsing session:
 - **Retention settings** - Configure how long to keep sessions (1 hour to 1 week)
 
 <!-- TODO: Add sessions view screenshot -->
-![Sessions View](screenshots/sessions-view.png)
+<img width="1047" height="891" alt="image" src="https://github.com/user-attachments/assets/f6006125-0b02-43a9-b77e-ccf32db21481" />
+
 
 ### 🔄 Request Replay
 Replay any captured request with full editing capabilities:
@@ -47,7 +50,8 @@ Replay any captured request with full editing capabilities:
 - **Response viewer** - See status, headers, and body of replay response
 
 <!-- TODO: Add request replay screenshot -->
-![Request Replay](screenshots/request-replay.png)
+<img width="1203" height="891" alt="image" src="https://github.com/user-attachments/assets/fc094146-b39b-4681-a463-f16b60c09d03" />
+
 
 ### 🔐 JWT Token Decoder
 Automatically detects and decodes JWT tokens in request headers:
@@ -57,7 +61,8 @@ Automatically detects and decodes JWT tokens in request headers:
 - **Configurable headers** - Scan `Authorization`, `X-Auth-Token`, or custom headers
 
 <!-- TODO: Add JWT decoder screenshot -->
-![JWT Decoder](screenshots/jwt-decoder.png)
+<img width="1203" height="891" alt="image" src="https://github.com/user-attachments/assets/211ac355-9de9-484f-96a0-cce7112c8b80" />
+
 
 ### 📋 Copy as JSON
 Export request data for documentation or debugging:
@@ -67,8 +72,6 @@ Export request data for documentation or debugging:
 - **Compact headers** - Formatted as `["key: value"]` array
 - **Formatted output** - Pretty-printed JSON ready for Slack/README
 
-<!-- TODO: Add copy JSON screenshot -->
-![Copy JSON](screenshots/copy-json.png)
 
 ### ⚙️ Settings
 Customize the extension behavior:
@@ -77,8 +80,8 @@ Customize the extension behavior:
 - **JWT headers** - Configure which headers to scan for JWT tokens
 - **Theme** - Light, dark, or system preference
 
-<!-- TODO: Add settings screenshot -->
-![Settings](screenshots/settings.png)
+<img width="837" height="891" alt="image" src="https://github.com/user-attachments/assets/7018ad4f-d85f-4ed9-8ef6-01b87a797eeb" />
+
 
 ---
 
@@ -228,65 +231,6 @@ After making code changes:
 4. Go to Developer Dashboard → Your extension → "Package" tab
 5. Upload new ZIP
 6. Submit for review
-
----
-
-## Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| **Vite** | Build tool with hot reload |
-| **vite-plugin-web-extension** | Chrome extension scaffolding |
-| **React 18** | UI framework |
-| **TypeScript** | Type safety |
-| **Tailwind CSS v4** | Styling |
-| **shadcn/ui** | UI components |
-| **react-resizable-panels** | Resizable panel layout |
-| **TanStack Query** | State management |
-| **Dexie.js** | IndexedDB wrapper for settings |
-| **Lucide React** | Icons |
-
----
-
-## Project Structure
-
-```
-src/
-├── devtools/              # DevTools panel entry
-│   ├── devtools.html      # DevTools page (registers panel)
-│   ├── devtools.ts        # Panel registration script
-│   ├── panel.html         # Panel HTML entry
-│   ├── panel.tsx          # React entry point
-│   └── App.tsx            # Main app component
-├── components/            # React components
-│   ├── ui/                # shadcn/ui components
-│   │   ├── badge.tsx
-│   │   ├── button.tsx
-│   │   ├── resizable.tsx
-│   │   ├── scroll-area.tsx
-│   │   └── tabs.tsx
-│   ├── RequestList.tsx    # Request list with grouping, search, filter
-│   ├── RequestDetail.tsx  # Request detail view with copy JSON
-│   ├── ReplayRequest.tsx  # Request replay with editing
-│   ├── SessionsView.tsx   # Domain/page grouped sessions
-│   ├── JWTDecoder.tsx     # JWT token decoder
-│   └── Settings.tsx       # Settings panel (retention, JWT headers)
-├── hooks/                 # Custom React hooks
-│   ├── useRequestStore.ts # Request state with session management
-│   └── useNetworkCapture.ts # Chrome DevTools network API
-├── db/                    # Database layer
-│   └── settings.ts        # Dexie.js settings store
-├── lib/                   # Utilities
-│   ├── utils.ts           # Tailwind cn() helper
-│   ├── jwt.ts             # JWT decoding utilities
-│   └── clipboard.ts       # Clipboard API with fallback
-├── types/                 # TypeScript types
-│   └── request.ts         # Request, PageSession, DomainGroup types
-├── styles/                # Global styles
-│   └── globals.css        # Tailwind + theme variables
-├── background.ts          # Service worker with fetch proxy
-└── manifest.json          # Extension manifest
-```
 
 ---
 
