@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Globe, FileText, Trash2, Copy, Check } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ChevronDown, ChevronRight, Globe, FileText, Trash2, Copy, Check, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { copyToClipboard } from "@/lib/clipboard";
+import { extractJWTFromHeaders } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CapturedRequest, DomainGroup, PageSession } from "@/types/request";
@@ -13,6 +14,18 @@ interface SessionsViewProps {
   onClearDomain: (domain: string) => void;
   onClearPage: (pageUrl: string) => void;
   jwtHeaders: string[];
+  tokenPrefixes: string[];
+}
+
+function findDomainJwt(domain: DomainGroup, jwtHeaders: string[], tokenPrefixes: string[]) {
+  // Find the most recent JWT from any request in this domain
+  for (const page of domain.pages) {
+    for (let i = page.requests.length - 1; i >= 0; i--) {
+      const jwt = extractJWTFromHeaders(page.requests[i].requestHeaders, jwtHeaders, tokenPrefixes);
+      if (jwt) return jwt;
+    }
+  }
+  return null;
 }
 
 function formatDuration(ms: number) {
@@ -172,15 +185,22 @@ function DomainView({
   selectedRequest,
   onClearDomain,
   onClearPage,
+  jwtHeaders,
+  tokenPrefixes,
 }: {
   domain: DomainGroup;
   onSelectRequest: (request: CapturedRequest) => void;
   selectedRequest: CapturedRequest | null;
   onClearDomain: (domain: string) => void;
   onClearPage: (pageUrl: string) => void;
+  jwtHeaders: string[];
+  tokenPrefixes: string[];
 }) {
   const [expanded, setExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [jwtCopied, setJwtCopied] = useState(false);
+
+  const domainJwt = useMemo(() => findDomainJwt(domain, jwtHeaders, tokenPrefixes), [domain, jwtHeaders, tokenPrefixes]);
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -189,6 +209,17 @@ function DomainView({
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyJwt = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (domainJwt) {
+      const success = await copyToClipboard(domainJwt.rawToken);
+      if (success) {
+        setJwtCopied(true);
+        setTimeout(() => setJwtCopied(false), 2000);
+      }
     }
   };
 
@@ -204,6 +235,18 @@ function DomainView({
         <span className="text-xs text-muted-foreground">
           {domain.pages.length} pages · {domain.totalRequests} req
         </span>
+        {domainJwt && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={handleCopyJwt}
+            title={`Copy JWT from ${domainJwt.header}`}
+          >
+            {jwtCopied ? <Check className="w-3 h-3 mr-1" /> : <Key className="w-3 h-3 mr-1" />}
+            {jwtCopied ? "Copied!" : "JWT"}
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -249,6 +292,8 @@ export function SessionsView({
   selectedRequest,
   onClearDomain,
   onClearPage,
+  jwtHeaders,
+  tokenPrefixes,
 }: SessionsViewProps) {
   if (domainGroups.length === 0) {
     return (
@@ -271,6 +316,8 @@ export function SessionsView({
             selectedRequest={selectedRequest}
             onClearDomain={onClearDomain}
             onClearPage={onClearPage}
+            jwtHeaders={jwtHeaders}
+            tokenPrefixes={tokenPrefixes}
           />
         ))}
       </div>

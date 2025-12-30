@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Trash2, List, Layers, Settings as SettingsIcon, Sun, Moon, Monitor, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +20,7 @@ export default function App() {
   const [mainTab, setMainTab] = useState("requests");
   const [viewMode, setViewMode] = useState<"grouped" | "flat">("grouped");
   const [jwtHeaders, setJwtHeaders] = useState<string[]>(DEFAULT_SETTINGS.jwtHeaders);
+  const [tokenPrefixes, setTokenPrefixes] = useState<string[]>(DEFAULT_SETTINGS.tokenPrefixes);
   const [sessionRetentionHours, setSessionRetentionHours] = useState<number>(DEFAULT_SETTINGS.sessionRetentionHours);
   const { theme, setTheme } = useTheme();
 
@@ -43,6 +44,7 @@ export default function App() {
   useEffect(() => {
     getSettings().then((settings) => {
       setJwtHeaders(settings.jwtHeaders);
+      setTokenPrefixes(settings.tokenPrefixes ?? DEFAULT_SETTINGS.tokenPrefixes);
       setSessionRetentionHours(settings.sessionRetentionHours);
       // Initial cleanup on load
       cleanupOldSessions(settings.sessionRetentionHours);
@@ -57,9 +59,10 @@ export default function App() {
     return () => clearInterval(interval);
   }, [sessionRetentionHours, cleanupOldSessions]);
 
-  const handleSaveSettings = async (settings: { jwtHeaders: string[]; sessionRetentionHours: number }) => {
+  const handleSaveSettings = async (settings: { jwtHeaders: string[]; tokenPrefixes: string[]; sessionRetentionHours: number }) => {
     await updateSettings(settings);
     setJwtHeaders(settings.jwtHeaders);
+    setTokenPrefixes(settings.tokenPrefixes);
     setSessionRetentionHours(settings.sessionRetentionHours);
     setMainTab("requests");
   };
@@ -154,6 +157,7 @@ export default function App() {
                 onClearDomain={clearDomain}
                 onClearPage={clearPage}
                 jwtHeaders={jwtHeaders}
+                tokenPrefixes={tokenPrefixes}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -171,7 +175,8 @@ export default function App() {
 
         <TabsContent value="settings" className="flex-1 overflow-hidden mt-0">
           <Settings 
-            jwtHeaders={jwtHeaders} 
+            jwtHeaders={jwtHeaders}
+            tokenPrefixes={tokenPrefixes}
             sessionRetentionHours={sessionRetentionHours}
             onSave={handleSaveSettings} 
           />

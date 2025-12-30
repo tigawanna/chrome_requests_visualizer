@@ -22,10 +22,22 @@ function base64UrlDecode(str: string): string {
   }
 }
 
-export function decodeJWT(token: string): JWTPayload | null {
+export function stripTokenPrefix(token: string, prefixes: string[] = ["Bearer", "Token", "JWT"]): string {
+  let cleanToken = token.trim();
+  for (const prefix of prefixes) {
+    const regex = new RegExp(`^${prefix}\\s+`, "i");
+    if (regex.test(cleanToken)) {
+      cleanToken = cleanToken.replace(regex, "").trim();
+      break;
+    }
+  }
+  return cleanToken;
+}
+
+export function decodeJWT(token: string, prefixes?: string[]): JWTPayload | null {
   if (!token) return null;
 
-  const cleanToken = token.replace(/^Bearer\s+/i, "").trim();
+  const cleanToken = stripTokenPrefix(token, prefixes);
   const parts = cleanToken.split(".");
 
   if (parts.length !== 3) {
@@ -65,14 +77,16 @@ export function decodeJWT(token: string): JWTPayload | null {
 
 export function extractJWTFromHeaders(
   headers: Record<string, string>,
-  jwtHeaderNames: string[]
-): { header: string; token: string } | null {
+  jwtHeaderNames: string[],
+  tokenPrefixes: string[] = ["Bearer", "Token", "JWT"]
+): { header: string; token: string; rawToken: string } | null {
   for (const headerName of jwtHeaderNames) {
-    const value = headers[headerName.toLowerCase()];
+    // Check both original case and lowercase
+    const value = headers[headerName] || headers[headerName.toLowerCase()];
     if (value) {
-      const token = value.replace(/^Bearer\s+/i, "").trim();
-      if (token.split(".").length === 3) {
-        return { header: headerName, token: value };
+      const rawToken = stripTokenPrefix(value, tokenPrefixes);
+      if (rawToken.split(".").length === 3) {
+        return { header: headerName, token: value, rawToken };
       }
     }
   }

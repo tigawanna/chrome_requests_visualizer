@@ -3,6 +3,7 @@ import Dexie, { type EntityTable } from "dexie";
 export interface UserSettings {
   id: string;
   jwtHeaders: string[];
+  tokenPrefixes: string[];
   theme: "light" | "dark" | "system";
   sessionRetentionHours: number;
 }
@@ -18,6 +19,7 @@ db.version(1).stores({
 export const DEFAULT_SETTINGS: UserSettings = {
   id: "user-settings",
   jwtHeaders: ["Authorization"],
+  tokenPrefixes: ["Bearer", "Token", "JWT"],
   theme: "system",
   sessionRetentionHours: 24,
 };

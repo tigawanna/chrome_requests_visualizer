@@ -5,8 +5,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SettingsProps {
   jwtHeaders: string[];
+  tokenPrefixes: string[];
   sessionRetentionHours: number;
-  onSave: (settings: { jwtHeaders: string[]; sessionRetentionHours: number }) => void;
+  onSave: (settings: { jwtHeaders: string[]; tokenPrefixes: string[]; sessionRetentionHours: number }) => void;
 }
 
 const RETENTION_OPTIONS = [
@@ -19,10 +20,12 @@ const RETENTION_OPTIONS = [
   { value: 168, label: "1 week" },
 ];
 
-export function Settings({ jwtHeaders, sessionRetentionHours, onSave }: SettingsProps) {
+export function Settings({ jwtHeaders, tokenPrefixes, sessionRetentionHours, onSave }: SettingsProps) {
   const [headers, setHeaders] = useState<string[]>(jwtHeaders);
+  const [prefixes, setPrefixes] = useState<string[]>(tokenPrefixes);
   const [retentionHours, setRetentionHours] = useState(sessionRetentionHours);
   const [newHeader, setNewHeader] = useState("");
+  const [newPrefix, setNewPrefix] = useState("");
 
   const addHeader = () => {
     if (newHeader.trim() && !headers.includes(newHeader.trim())) {
@@ -35,8 +38,19 @@ export function Settings({ jwtHeaders, sessionRetentionHours, onSave }: Settings
     setHeaders(headers.filter((h) => h !== header));
   };
 
+  const addPrefix = () => {
+    if (newPrefix.trim() && !prefixes.includes(newPrefix.trim())) {
+      setPrefixes([...prefixes, newPrefix.trim()]);
+      setNewPrefix("");
+    }
+  };
+
+  const removePrefix = (prefix: string) => {
+    setPrefixes(prefixes.filter((p) => p !== prefix));
+  };
+
   const handleSave = () => {
-    onSave({ jwtHeaders: headers, sessionRetentionHours: retentionHours });
+    onSave({ jwtHeaders: headers, tokenPrefixes: prefixes, sessionRetentionHours: retentionHours });
   };
 
   return (
@@ -98,6 +112,46 @@ export function Settings({ jwtHeaders, sessionRetentionHours, onSave }: Settings
               className="flex-1 px-3 py-2 text-sm border border-input rounded-md bg-background"
             />
             <Button variant="outline" size="icon" onClick={addHeader}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Token Prefixes</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Prefixes to strip when extracting JWT tokens (e.g., "Bearer", "Token").
+          </p>
+
+          <div className="space-y-2">
+            {prefixes.map((prefix) => (
+              <div
+                key={prefix}
+                className="flex items-center justify-between bg-muted px-3 py-2 rounded-md"
+              >
+                <span className="font-mono text-sm">{prefix}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => removePrefix(prefix)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2 mt-3">
+            <input
+              type="text"
+              value={newPrefix}
+              onChange={(e) => setNewPrefix(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addPrefix()}
+              placeholder="Prefix (e.g., ApiKey)"
+              className="flex-1 px-3 py-2 text-sm border border-input rounded-md bg-background"
+            />
+            <Button variant="outline" size="icon" onClick={addPrefix}>
               <Plus className="w-4 h-4" />
             </Button>
           </div>
