@@ -1,10 +1,43 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, Clock, FileJson, Key, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock, FileJson, Key, Search, X, Copy, Check, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { copyToClipboard } from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CapturedRequest, RequestGroup } from "@/types/request";
 import { extractJWTFromHeaders } from "@/lib/jwt";
+
+// Extract unique route segments from all requests
+function extractRouteSegments(requests: CapturedRequest[]): string[] {
+  const segments = new Set<string>();
+  for (const req of requests) {
+    try {
+      const pathname = new URL(req.url).pathname;
+      const parts = pathname.split("/").filter(Boolean);
+      parts.forEach((part) => {
+        // Skip IDs, UUIDs, ObjectIds
+        if (!/^\d+$/.test(part) && 
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(part) &&
+            !/^[0-9a-f]{24}$/i.test(part)) {
+          segments.add(part);
+        }
+      });
+    } catch {
+      // Ignore invalid URLs
+    }
+  }
+  return Array.from(segments).sort();
+}
+
+function buildRequestsSummaryJson(requests: CapturedRequest[]) {
+  return requests.map((r) => ({
+    method: r.method,
+    url: r.url,
+    status: r.status,
+    duration: `${r.duration.toFixed(0)}ms`,
+    size: `${r.size}B`,
+  }));
+}
 
 interface RequestListProps {
   groups: RequestGroup[];
@@ -209,6 +242,11 @@ export function RequestList({
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState<MethodFilter>("ALL");
   const [sortBy, setSortBy] = useState<SortOption>("time-desc");
+  const [segmentFilter, setSegmentFilter] = useState<string>("ALL");
+  const [copied, setCopied] = useState(false);
+
+  // Get unique route segments for filtering
+  const routeSegments = useMemo(() => extractRouteSegments(requests), [requests]);
 
   // Filter and sort requests
   const filteredRequests = useMemo(() => {
@@ -228,6 +266,18 @@ export function RequestList({
       result = result.filter((r) => r.method === methodFilter);
     }
 
+    // Apply route segment filter
+    if (segmentFilter !== "ALL") {
+      result = result.filter((r) => {
+        try {
+          const pathname = new URL(r.url).pathname;
+          return pathname.includes(`/${segmentFilter}/`) || pathname.endsWith(`/${segmentFilter}`);
+        } catch {
+          return false;
+        }
+      });
+    }
+
     // Apply sorting
     result.sort((a, b) => {
       switch (sortBy) {
@@ -245,11 +295,22 @@ export function RequestList({
     });
 
     return result;
-  }, [requests, search, methodFilter, sortBy]);
+  }, [requests, search, methodFilter, segmentFilter, sortBy]);
 
-  // Filter groups based on search and method filter
+  // Handle copy filtered requests
+  const handleCopyRequests = async () => {
+    const summary = buildRequestsSummaryJson(filteredRequests);
+    const json = JSON.stringify(summary, null, 2);
+    const success = await copyToClipboard(json);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Filter groups based on search, method, and segment filter
   const filteredGroups = useMemo(() => {
-    if (!search && methodFilter === "ALL") return groups;
+    if (!search && methodFilter === "ALL" && segmentFilter === "ALL") return groups;
 
     return groups
       .map((group) => {
@@ -267,6 +328,17 @@ export function RequestList({
           filteredReqs = filteredReqs.filter((r) => r.method === methodFilter);
         }
 
+        if (segmentFilter !== "ALL") {
+          filteredReqs = filteredReqs.filter((r) => {
+            try {
+              const pathname = new URL(r.url).pathname;
+              return pathname.includes(`/${segmentFilter}/`) || pathname.endsWith(`/${segmentFilter}`);
+            } catch {
+              return false;
+            }
+          });
+        }
+
         if (filteredReqs.length === 0) return null;
 
         return {
@@ -277,7 +349,7 @@ export function RequestList({
         };
       })
       .filter(Boolean) as RequestGroup[];
-  }, [groups, search, methodFilter]);
+  }, [groups, search, methodFilter, segmentFilter]);
 
   if (requests.length === 0) {
     return (
@@ -313,7 +385,7 @@ export function RequestList({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={methodFilter}
             onChange={(e) => setMethodFilter(e.target.value as MethodFilter)}
@@ -327,6 +399,19 @@ export function RequestList({
             <option value="DELETE">DELETE</option>
             <option value="OPTIONS">OPTIONS</option>
           </select>
+          {routeSegments.length > 0 && (
+            <select
+              value={segmentFilter}
+              onChange={(e) => setSegmentFilter(e.target.value)}
+              className="px-2 py-1 text-xs bg-background border border-border rounded max-w-[120px]"
+              title="Filter by route segment"
+            >
+              <option value="ALL">All Routes</option>
+              {routeSegments.map((seg) => (
+                <option key={seg} value={seg}>{seg}</option>
+              ))}
+            </select>
+          )}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -337,9 +422,22 @@ export function RequestList({
             <option value="method">By Method</option>
             <option value="status">By Status</option>
           </select>
-          <span className="text-xs text-muted-foreground ml-auto">
-            {filteredRequests.length} / {requests.length}
-          </span>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={handleCopyRequests}
+              disabled={filteredRequests.length === 0}
+              title="Copy filtered requests as JSON"
+            >
+              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+              {copied ? "Copied!" : `Copy ${filteredRequests.length}`}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {filteredRequests.length} / {requests.length}
+            </span>
+          </div>
         </div>
       </div>
 

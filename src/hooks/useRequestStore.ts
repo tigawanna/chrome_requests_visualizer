@@ -70,14 +70,30 @@ export function useRequestStore() {
     };
     setRequests((prev) => [...prev, newRequest]);
     
-    // Also add to current page session
+    // Also add to page session - create session if needed
     setPageSessions((prev) => {
-      const sessions = [...prev];
-      const currentSession = sessions.find((s) => s.pageUrl === request.pageUrl);
-      if (currentSession) {
-        currentSession.requests = [...currentSession.requests, newRequest];
+      const sessionIndex = prev.findIndex((s) => s.pageUrl === request.pageUrl);
+      
+      if (sessionIndex >= 0) {
+        // Update existing session with new request (immutable update)
+        return prev.map((session, idx) => 
+          idx === sessionIndex 
+            ? { ...session, requests: [...session.requests, newRequest] }
+            : session
+        );
       }
-      return sessions;
+      
+      // Create new session if one doesn't exist for this pageUrl
+      const { domain, path } = parsePageUrl(request.pageUrl);
+      const newSession: PageSession = {
+        id: crypto.randomUUID(),
+        pageUrl: request.pageUrl,
+        domain,
+        path,
+        timestamp: Date.now(),
+        requests: [newRequest],
+      };
+      return [...prev, newSession];
     });
     
     return newRequest;
