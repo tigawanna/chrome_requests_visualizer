@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Trash2, List, Layers, Settings as SettingsIcon, Sun, Moon, Monitor, Globe } from "lucide-react";
+import { Trash2, List, Layers, Settings as SettingsIcon, Sun, Moon, Monitor, Globe, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -26,8 +26,23 @@ export default function App() {
 
   const {
     requests,
+    filteredRequests,
+    filteredGroupedRequests,
+    filters,
+    setFilters,
+    routeSegments,
     selectedRequest,
     setSelectedRequest,
+    // Multi-select for copy
+    selectedIds,
+    toggleSelected,
+    clearSelection,
+    // Mark/bookmark
+    markedIds,
+    toggleMarked,
+    // Copy helper
+    getRequestsForCopy,
+    // Mutations
     addRequest,
     onNavigate,
     clearRequests,
@@ -126,18 +141,43 @@ export default function App() {
           <ResizablePanelGroup orientation="horizontal" className="h-full">
             <ResizablePanel defaultSize={40} minSize={25}>
               <RequestList
-                groups={groupedRequests}
+                groups={filteredGroupedRequests}
                 requests={requests}
+                filteredRequests={filteredRequests}
                 selectedRequest={selectedRequest}
                 onSelectRequest={setSelectedRequest}
                 jwtHeaders={jwtHeaders}
                 viewMode={viewMode}
+                filters={filters}
+                setFilters={setFilters}
+                routeSegments={routeSegments}
+                selectedIds={selectedIds}
+                toggleSelected={toggleSelected}
+                clearSelection={clearSelection}
+                markedIds={markedIds}
+                toggleMarked={toggleMarked}
+                getRequestsForCopy={getRequestsForCopy}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={60} minSize={30}>
               {selectedRequest ? (
-                <RequestDetail request={selectedRequest} jwtHeaders={jwtHeaders} />
+                <div className="h-full flex flex-col">
+                  <div className="flex items-center justify-end px-2 py-1 border-b border-border shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setSelectedRequest(null)}
+                      title="Close detail panel"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <RequestDetail request={selectedRequest} jwtHeaders={jwtHeaders} />
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   Select a request to view details
@@ -163,7 +203,22 @@ export default function App() {
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={60} minSize={30}>
               {selectedRequest ? (
-                <RequestDetail request={selectedRequest} jwtHeaders={jwtHeaders} />
+                <div className="h-full flex flex-col">
+                  <div className="flex items-center justify-end px-2 py-1 border-b border-border shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setSelectedRequest(null)}
+                      title="Close detail panel"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <RequestDetail request={selectedRequest} jwtHeaders={jwtHeaders} />
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   Select a request to view details

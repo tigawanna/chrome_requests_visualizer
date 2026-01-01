@@ -1,14 +1,13 @@
 // TanStack DB implementation for request store
-// To use: swap useRequestStore import in App.tsx to use this version
+// Sessions are derived from requests - no separate sessions collection needed
 
 export {
   requestsCollection,
-  pageSessionsCollection,
   collectionQueryClient,
   addRequest,
-  onNavigate,
   generateUrlPattern,
   parsePageUrl,
 } from "./collections";
 
 export { useRequestStore } from "./useRequestStore";
+export type { RequestFilters, MethodFilter, SortOption } from "./useRequestStore";

@@ -234,6 +234,132 @@ After making code changes:
 
 ---
 
+## Tech Stack
+
+### TanStack DB
+
+This extension uses [TanStack DB](https://tanstack.com/db) for reactive client-side data management. Here are the key patterns we use:
+
+#### Collection Definition
+
+```typescript
+import { createCollection, createLocalStoragePersister } from "@tanstack/db";
+
+// Define schema
+const requestsSchema = {
+  id: "string",
+  url: "string",
+  method: "string",
+  status: "number",
+  startTime: "number",
+  // ...
+} as const;
+
+// Create collection with persistence
+export const requestsCollection = createCollection({
+  id: "requests",
+  schema: requestsSchema,
+  persister: createLocalStoragePersister({ name: "requests-db" }),
+});
+```
+
+#### Live Queries with Filtering
+
+```typescript
+import { useLiveQuery } from "@tanstack/react-db";
+import { eq, ilike, or } from "@tanstack/db";
+
+// Reactive filtered query - re-executes when dependencies change
+const filteredResult = useLiveQuery(
+  (q) => {
+    let query = q.from({ req: requestsCollection });
+
+    // Method filter - eq() for equality
+    if (filters.method !== "ALL") {
+      query = query.where(({ req }) => eq(req.method, filters.method));
+    }
+
+    // Search filter - ilike() for case-insensitive pattern matching
+    if (filters.search) {
+      query = query.where(({ req }) => 
+        or(
+          ilike(req.url, `%${filters.search}%`),
+          ilike(req.method, `%${filters.search}%`)
+        )
+      );
+    }
+
+    // Sorting
+    return query.orderBy(({ req }) => req.startTime, "desc");
+  },
+  [filters.method, filters.search] // Dependencies trigger re-execution
+);
+```
+
+#### Direct Writes
+
+```typescript
+// Insert
+requestsCollection.utils.writeInsert(newRequest);
+
+// Delete
+requestsCollection.utils.writeDelete(requestId);
+
+// Update
+requestsCollection.utils.writeUpdate(requestId, { status: 200 });
+```
+
+#### Available Operators
+
+```typescript
+import { eq, gt, gte, lt, lte, like, ilike, inArray, and, or, not } from "@tanstack/db";
+
+// Equality
+eq(req.id, 1)
+
+// Comparisons
+gt(req.status, 200)   // greater than
+gte(req.status, 200)  // greater than or equal
+lt(req.status, 400)   // less than
+lte(req.status, 400)  // less than or equal
+
+// String matching
+like(req.url, "/api/%")   // case-sensitive pattern
+ilike(req.url, "/api/%")  // case-insensitive pattern
+
+// Array membership
+inArray(req.method, ["GET", "POST"])
+
+// Logical operators
+and(condition1, condition2)
+or(condition1, condition2)
+not(condition)
+```
+
+#### Conditional Query Building
+
+```typescript
+// Chain .where() calls conditionally - each adds an AND condition
+const result = useLiveQuery(
+  (q) => {
+    let query = q.from({ req: requestsCollection });
+
+    if (showActive) {
+      query = query.where(({ req }) => eq(req.active, true));
+    }
+
+    if (minStatus) {
+      query = query.where(({ req }) => gte(req.status, minStatus));
+    }
+
+    return query.orderBy(({ req }) => req.startTime, "desc");
+  },
+  [showActive, minStatus]
+);
+```
+
+---
+
 ## License
 
 MIT
