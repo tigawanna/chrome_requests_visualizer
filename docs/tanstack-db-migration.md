@@ -12,7 +12,7 @@ const [requests, setRequests] = useState<CapturedRequest[]>([]);
 const [pageSessions, setPageSessions] = useState<PageSession[]>([]);
 
 // Manual sync between two state arrays
-const addRequest = useCallback((request) => {
+const addRequest = (request) => {
   setRequests((prev) => [...prev, newRequest]);
   setPageSessions((prev) => {
     // Manual immutable update to keep in sync
@@ -22,16 +22,18 @@ const addRequest = useCallback((request) => {
         : session
     );
   });
-}, []);
+};
 
-// Manual derived state with useMemo
-const groupedRequests = useMemo(() => { /* expensive computation */ }, [requests]);
-const domainGroups = useMemo(() => { /* expensive computation */ }, [pageSessions]);
+// Derived state (React Compiler handles memoization automatically)
+const groupedRequests = /* expensive computation */;
+const domainGroups = /* expensive computation */;
 ```
+
+> **Note:** This project uses React 19 with React Compiler - no manual `useMemo`/`useCallback` needed.
 
 **Issues:**
 1. Dual state arrays must be kept in sync manually
-2. Derived state (`groupedRequests`, `domainGroups`) recomputes fully on any change
+2. Derived state still recomputes fully on any change (even with compiler optimization)
 3. No optimistic UI pattern - mutations block until state updates
 4. Filtering requires re-running entire computation
 

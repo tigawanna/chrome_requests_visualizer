@@ -19,9 +19,10 @@ interface SessionsViewProps {
 
 function findDomainJwt(domain: DomainGroup, jwtHeaders: string[], tokenPrefixes: string[]) {
   // Find the most recent JWT from any request in this domain
-  for (const page of domain.pages) {
-    for (let i = page.requests.length - 1; i >= 0; i--) {
-      const jwt = extractJWTFromHeaders(page.requests[i].requestHeaders, jwtHeaders, tokenPrefixes);
+  for (const page of domain.pages ?? []) {
+    const requests = page.requests ?? [];
+    for (let i = requests.length - 1; i >= 0; i--) {
+      const jwt = extractJWTFromHeaders(requests[i].requestHeaders, jwtHeaders, tokenPrefixes);
       if (jwt) return jwt;
     }
   }
@@ -41,20 +42,28 @@ function getStatusDotColor(status: number) {
   return "bg-gray-400";
 }
 
+function safePathname(url: string): string {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return url || "/";
+  }
+}
+
 function buildPageSummaryJson(page: PageSession) {
   return {
     pageUrl: page.pageUrl,
     domain: page.domain,
     path: page.path,
-    requestCount: page.requests.length,
-    requests: page.requests.slice(0, 10).map((r) => ({
+    requestCount: page.requests?.length ?? 0,
+    requests: (page.requests ?? []).slice(0, 10).map((r) => ({
       method: r.method,
-      url: new URL(r.url).pathname,
+      url: safePathname(r.url),
       status: r.status,
       duration: `${r.duration.toFixed(0)}ms`,
     })),
-    ...(page.requests.length > 10 && {
-      truncated: `... and ${page.requests.length - 10} more requests`,
+    ...((page.requests?.length ?? 0) > 10 && {
+      truncated: `... and ${(page.requests?.length ?? 0) - 10} more requests`,
     }),
   };
 }
@@ -65,14 +74,14 @@ function buildDomainSummaryJson(domain: DomainGroup) {
     totalRequests: domain.totalRequests,
     pages: domain.pages.map((p) => ({
       path: p.path,
-      requestCount: p.requests.length,
-      requests: p.requests.slice(0, 5).map((r) => ({
+      requestCount: p.requests?.length ?? 0,
+      requests: (p.requests ?? []).slice(0, 5).map((r) => ({
         method: r.method,
-        endpoint: new URL(r.url).pathname,
+        endpoint: safePathname(r.url),
         status: r.status,
       })),
-      ...(p.requests.length > 5 && {
-        truncated: `... and ${p.requests.length - 5} more`,
+      ...((p.requests?.length ?? 0) > 5 && {
+        truncated: `... and ${(p.requests?.length ?? 0) - 5} more`,
       }),
     })),
   };
@@ -98,7 +107,7 @@ function RequestRow({
       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", getStatusDotColor(request.status))} />
       <span className="w-10 text-muted-foreground font-mono">{request.method}</span>
       <span className="flex-1 truncate font-mono" title={request.url}>
-        {new URL(request.url).pathname}
+        {safePathname(request.url)}
       </span>
       <span className="text-muted-foreground">{formatDuration(request.duration)}</span>
     </div>
@@ -140,7 +149,7 @@ function PageSessionView({
         <span className="flex-1 truncate font-mono" title={page.path}>
           {page.path || "/"}
         </span>
-        <span className="text-muted-foreground">{page.requests.length} req</span>
+        <span className="text-muted-foreground">{page.requests?.length ?? 0} req</span>
         <Button
           variant="ghost"
           size="icon"

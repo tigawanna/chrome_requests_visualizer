@@ -11,7 +11,7 @@ import { RequestList } from "@/components/RequestList";
 import { RequestDetail } from "@/components/RequestDetail";
 import { Settings } from "@/components/Settings";
 import { SessionsView } from "@/components/SessionsView";
-import { useRequestStore } from "@/hooks/useRequestStore";
+import { useRequestStore } from "@/lib/tanstackdb";
 import { useNetworkCapture } from "@/hooks/useNetworkCapture";
 import { getSettings, updateSettings, DEFAULT_SETTINGS } from "@/db/settings";
 import { useTheme } from "next-themes";

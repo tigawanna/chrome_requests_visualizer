@@ -7,6 +7,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CapturedRequest, RequestGroup } from "@/types/request";
 import { extractJWTFromHeaders } from "@/lib/jwt";
 
+function safePathname(url: string): string {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return url || "/";
+  }
+}
+
 // Extract unique route segments from all requests
 function extractRouteSegments(requests: CapturedRequest[]): string[] {
   const segments = new Set<string>();
@@ -98,7 +106,7 @@ function RequestRow({
       </span>
       <span className="w-14 text-muted-foreground font-mono text-xs">{request.method}</span>
       <span className="flex-1 truncate font-mono text-xs" title={request.url}>
-        {new URL(request.url).pathname}
+        {safePathname(request.url)}
       </span>
       <div className="flex items-center gap-2 text-muted-foreground">
         {hasJWT && <span title="Contains JWT"><Key className="w-3 h-3 text-yellow-500" /></span>}
@@ -182,7 +190,7 @@ function GroupedView({
                 {methods.join(", ")}
               </span>
               <span className="flex-1 truncate font-mono text-xs" title={group.pattern}>
-                {new URL(group.pattern).pathname}
+                {safePathname(group.pattern)}
               </span>
               <span className="text-muted-foreground text-xs">
                 avg {formatDuration(group.avgDuration)}
@@ -403,7 +411,7 @@ export function RequestList({
             <select
               value={segmentFilter}
               onChange={(e) => setSegmentFilter(e.target.value)}
-              className="px-2 py-1 text-xs bg-background border border-border rounded max-w-[120px]"
+              className="px-2 py-1 text-xs bg-background border border-border rounded max-w-30"
               title="Filter by route segment"
             >
               <option value="ALL">All Routes</option>
