@@ -1,0 +1,2 @@
+- use the new react 19 `<Activity></Activity>` for the tabs
+- investigate making the url permisions more fine grained
