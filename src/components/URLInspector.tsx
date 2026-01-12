@@ -175,25 +175,24 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
               <Copy className="w-3 h-3 mr-1" />
               Copy URL
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetToOriginal}
+              title="Sync with current page URL"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Sync
+            </Button>
             {hasChanges && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetToOriginal}
-                >
-                  <RotateCcw className="w-3 h-3 mr-1" />
-                  Reset
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={navigateToUrl}
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  Navigate
-                </Button>
-              </>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={navigateToUrl}
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                Navigate
+              </Button>
             )}
           </div>
         </div>
