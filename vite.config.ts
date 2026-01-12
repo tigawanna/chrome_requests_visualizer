@@ -40,7 +40,8 @@ export default defineConfig({
       folderPath: path.resolve(__dirname, "dist"),
       outPath: path.resolve(__dirname),
       zipName: "dist.zip",
-      enabled: env.NODE_ENV === "production" ? true : false,
+      enabled:true,
+      // enabled: env.NODE_ENV === "production" ? true : false,
     }),
   ],
   resolve: {

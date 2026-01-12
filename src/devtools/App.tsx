@@ -1,20 +1,21 @@
-import { useState, useEffect, useMemo } from "react";
-import { Trash2, List, Layers, Settings as SettingsIcon, Sun, Moon, Monitor, Globe, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
-import { RequestList } from "@/components/RequestList";
 import { RequestDetail } from "@/components/RequestDetail";
-import { Settings } from "@/components/Settings";
+import { RequestList } from "@/components/RequestList";
 import { SessionsView } from "@/components/SessionsView";
-import { useRequestStore } from "@/lib/tanstackdb";
+import { Settings } from "@/components/Settings";
+import { Button } from "@/components/ui/button";
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { URLInspector } from "@/components/URLInspector";
+import { DEFAULT_SETTINGS, getSettings, updateSettings } from "@/db/settings";
 import { useNetworkCapture } from "@/hooks/useNetworkCapture";
-import { getSettings, updateSettings, DEFAULT_SETTINGS } from "@/db/settings";
+import { useRequestStore } from "@/lib/tanstackdb";
+import { Globe, Layers, Link2, List, Monitor, Moon, Settings as SettingsIcon, Sun, Trash2, X } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 export default function App() {
   const [mainTab, setMainTab] = useState("requests");
@@ -134,6 +135,10 @@ export default function App() {
             <Globe className="w-4 h-4 mr-1" />
             Sessions
           </TabsTrigger>
+          <TabsTrigger value="url-inspector">
+            <Link2 className="w-4 h-4 mr-1" />
+            URL
+          </TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -226,6 +231,10 @@ export default function App() {
               )}
             </ResizablePanel>
           </ResizablePanelGroup>
+        </TabsContent>
+
+        <TabsContent value="url-inspector" className="flex-1 overflow-hidden mt-0">
+          <URLInspector currentPageUrl={currentPageUrl} />
         </TabsContent>
 
         <TabsContent value="settings" className="flex-1 overflow-hidden mt-0">
