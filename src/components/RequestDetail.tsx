@@ -15,6 +15,19 @@ function headersToArray(headers: Record<string, string>): string[] {
   return Object.entries(headers).map(([k, v]) => `${k}: ${v}`);
 }
 
+function parseQueryParams(url: string): Record<string, string> {
+  try {
+    const urlObj = new URL(url);
+    const params: Record<string, string> = {};
+    urlObj.searchParams.forEach((value, key) => {
+      params[key] = value;
+    });
+    return params;
+  } catch {
+    return {};
+  }
+}
+
 function truncateBody(body: unknown, maxItems = 5, maxLines = 10): unknown {
   if (Array.isArray(body)) {
     if (body.length > maxItems) {
@@ -122,6 +135,8 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
   const [showReplay, setShowReplay] = useState(false);
   const [jsonCopied, setJsonCopied] = useState(false);
   const jwtInfo = extractJWTFromHeaders(request.requestHeaders, jwtHeaders);
+  const queryParams = parseQueryParams(request.url);
+  const hasQueryParams = Object.keys(queryParams).length > 0;
 
   const handleCopyAsJson = async () => {
     const json = JSON.stringify(buildRequestJson(request), null, 2);
@@ -166,6 +181,7 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
       <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="mx-3 mt-2 shrink-0">
           <TabsTrigger value="headers">Headers</TabsTrigger>
+          {hasQueryParams && <TabsTrigger value="params">Query Params</TabsTrigger>}
           <TabsTrigger value="request">Request</TabsTrigger>
           <TabsTrigger value="response">Response</TabsTrigger>
           {jwtInfo && <TabsTrigger value="jwt">JWT</TabsTrigger>}
@@ -185,6 +201,15 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
                 </div>
               </div>
             </TabsContent>
+
+            {hasQueryParams && (
+              <TabsContent value="params" className="mt-0">
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Query Parameters</h4>
+                  <HeadersTable headers={queryParams} />
+                </div>
+              </TabsContent>
+            )}
 
             <TabsContent value="request" className="mt-0">
               {request.requestBody ? (
