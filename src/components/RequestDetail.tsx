@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Copy, Check, Play, FileJson } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { copyToClipboard } from "@/lib/clipboard";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { copyToClipboard } from "@/lib/clipboard";
+import { extractJWTFromHeaders } from "@/lib/jwt";
+import { cn } from "@/lib/utils";
 import type { CapturedRequest } from "@/types/request";
+import { Check, Copy, FileJson, Play } from "lucide-react";
+import { useState } from "react";
 import { JWTDecoder } from "./JWTDecoder";
 import { ReplayRequest } from "./ReplayRequest";
-import { extractJWTFromHeaders } from "@/lib/jwt";
 
 function headersToArray(headers: Record<string, string>): string[] {
   return Object.entries(headers).map(([k, v]) => `${k}: ${v}`);
