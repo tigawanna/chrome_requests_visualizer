@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { copyToClipboard } from "@/lib/clipboard";
-import { Copy, ExternalLink, Link2, Plus, RotateCcw, X } from "lucide-react";
+import { Check, Copy, ExternalLink, Link2, Plus, RotateCcw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface URLParts {
@@ -81,6 +81,13 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
     parseQueryParams(parseUrlParts(currentPageUrl).search)
   );
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Visual feedback states
+  const [copied, setCopied] = useState(false);
+  const [synced, setSynced] = useState(false);
+  const [navigated, setNavigated] = useState(false);
+  const [paramCopiedId, setParamCopiedId] = useState<string | null>(null);
+  const [urlPartCopied, setUrlPartCopied] = useState<string | null>(null);
 
   // Update when currentPageUrl changes
   useEffect(() => {
@@ -117,6 +124,29 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
     setQueryParams(parseQueryParams(parts.search));
   };
 
+  const syncWithCurrentUrl = () => {
+    // Try to get the current URL from the devtools inspected window
+    if (typeof chrome !== "undefined" && chrome.devtools?.inspectedWindow) {
+      chrome.devtools.inspectedWindow.eval(
+        "window.location.href",
+        (result: string) => {
+          if (result && typeof result === "string") {
+            const parts = parseUrlParts(result);
+            setUrlParts(parts);
+            setQueryParams(parseQueryParams(parts.search));
+            setSynced(true);
+            setTimeout(() => setSynced(false), 2000);
+          }
+        }
+      );
+    } else {
+      // Fallback to using currentPageUrl
+      resetToOriginal();
+      setSynced(true);
+      setTimeout(() => setSynced(false), 2000);
+    }
+  };
+
   const navigateToUrl = () => {
     // Use chrome.devtools.inspectedWindow.eval to navigate the inspected page
     if (typeof chrome !== "undefined" && chrome.devtools?.inspectedWindow) {
@@ -125,10 +155,32 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
       // Fallback for development/testing
       window.open(constructedUrl, "_blank");
     }
+    setNavigated(true);
+    setTimeout(() => setNavigated(false), 2000);
   };
 
-  const copyUrl = () => {
-    copyToClipboard(constructedUrl);
+  const copyUrlPart = async (value: string, partName: string) => {
+    const success = await copyToClipboard(value);
+    if (success) {
+      setUrlPartCopied(partName);
+      setTimeout(() => setUrlPartCopied(null), 2000);
+    }
+  };
+
+  const copyQueryParam = async (key: string, value: string, id: string) => {
+    const success = await copyToClipboard(`${key}=${value}`);
+    if (success) {
+      setParamCopiedId(id);
+      setTimeout(() => setParamCopiedId(null), 2000);
+    }
+  };
+
+  const copyUrl = async () => {
+    const success = await copyToClipboard(constructedUrl);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const origin = `${urlParts.protocol}://${urlParts.hostname}${urlParts.port ? `:${urlParts.port}` : ""}`;
@@ -172,17 +224,17 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
               onClick={copyUrl}
               className="flex-1"
             >
-              <Copy className="w-3 h-3 mr-1" />
-              Copy URL
+              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+              {copied ? "Copied!" : "Copy URL"}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={resetToOriginal}
+              onClick={syncWithCurrentUrl}
               title="Sync with current page URL"
             >
-              <RotateCcw className="w-3 h-3 mr-1" />
-              Sync
+              {synced ? <Check className="w-3 h-3 mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+              {synced ? "Synced!" : "Sync"}
             </Button>
             {hasChanges && (
               <Button
@@ -190,8 +242,8 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
                 size="sm"
                 onClick={navigateToUrl}
               >
-                <ExternalLink className="w-3 h-3 mr-1" />
-                Navigate
+                {navigated ? <Check className="w-3 h-3 mr-1" /> : <ExternalLink className="w-3 h-3 mr-1" />}
+                {navigated ? "Navigated!" : "Navigate"}
               </Button>
             )}
           </div>
@@ -214,18 +266,18 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="mt-4 space-y-3">
-            <URLPartRow label="Protocol" value={urlParts.protocol} copyable />
-            <URLPartRow label="Hostname" value={urlParts.hostname} copyable />
-            {urlParts.port && <URLPartRow label="Port" value={urlParts.port} copyable />}
-            <URLPartRow label="Origin" value={origin} copyable />
-            <URLPartRow label="Pathname" value={urlParts.pathname} copyable />
+            <URLPartRow label="Protocol" value={urlParts.protocol} copyable urlPartCopied={urlPartCopied} onCopy={copyUrlPart} />
+            <URLPartRow label="Hostname" value={urlParts.hostname} copyable urlPartCopied={urlPartCopied} onCopy={copyUrlPart} />
+            {urlParts.port && <URLPartRow label="Port" value={urlParts.port} copyable urlPartCopied={urlPartCopied} onCopy={copyUrlPart} />}
+            <URLPartRow label="Origin" value={origin} copyable urlPartCopied={urlPartCopied} onCopy={copyUrlPart} />
+            <URLPartRow label="Pathname" value={urlParts.pathname} copyable urlPartCopied={urlPartCopied} onCopy={copyUrlPart} />
             {queryParams.length > 0 && (
               <URLPartRow 
                 label="Search" 
                 value={`${queryParams.length} parameter${queryParams.length !== 1 ? "s" : ""}`} 
               />
             )}
-            {urlParts.hash && <URLPartRow label="Hash" value={urlParts.hash} copyable />}
+            {urlParts.hash && <URLPartRow label="Hash" value={urlParts.hash} copyable urlPartCopied={urlPartCopied} onCopy={copyUrlPart} />}
           </TabsContent>
 
           {/* Query Params Tab */}
@@ -253,10 +305,10 @@ export function URLInspector({ currentPageUrl }: URLInspectorProps) {
                       variant="ghost"
                       size="icon"
                       className="h-5 w-5 shrink-0"
-                      onClick={() => copyToClipboard(`${param.key}=${param.value}`)}
+                      onClick={() => copyQueryParam(param.key, param.value, param.id)}
                       title="Copy parameter"
                     >
-                      <Copy className="w-3 h-3" />
+                      {paramCopiedId === param.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                     </Button>
                   </div>
                 ))}
@@ -392,9 +444,11 @@ interface URLPartRowProps {
   label: string;
   value: string;
   copyable?: boolean;
+  urlPartCopied?: string | null;
+  onCopy?: (value: string, label: string) => void;
 }
 
-function URLPartRow({ label, value, copyable }: URLPartRowProps) {
+function URLPartRow({ label, value, copyable, urlPartCopied, onCopy }: URLPartRowProps) {
   return (
     <div className="flex items-start justify-between gap-4 py-2 border-b border-border last:border-b-0">
       <span className="text-xs text-muted-foreground shrink-0 w-20">{label}</span>
@@ -405,10 +459,10 @@ function URLPartRow({ label, value, copyable }: URLPartRowProps) {
             variant="ghost"
             size="icon"
             className="h-5 w-5 shrink-0"
-            onClick={() => copyToClipboard(value)}
+            onClick={() => onCopy?.(value, label)}
             title={`Copy ${label.toLowerCase()}`}
           >
-            <Copy className="w-3 h-3" />
+            {urlPartCopied === label ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           </Button>
         )}
       </div>
