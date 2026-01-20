@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { URLInspector } from "@/components/URLInspector";
 import { DEFAULT_SETTINGS, getSettings, updateSettings } from "@/db/settings";
 import { useNetworkCapture } from "@/hooks/useNetworkCapture";
-import { useRequestStore } from "@/lib/tanstackdb";
+import { garbageCollectRequests, updateGCConfig, useRequestStore } from "@/lib/tanstackdb";
 import { Globe, Layers, Link2, List, Monitor, Moon, Settings as SettingsIcon, Sun, Trash2, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -23,6 +23,8 @@ export default function App() {
   const [jwtHeaders, setJwtHeaders] = useState<string[]>(DEFAULT_SETTINGS.jwtHeaders);
   const [tokenPrefixes, setTokenPrefixes] = useState<string[]>(DEFAULT_SETTINGS.tokenPrefixes);
   const [sessionRetentionHours, setSessionRetentionHours] = useState<number>(DEFAULT_SETTINGS.sessionRetentionHours);
+  const [maxRequestsPerEndpoint, setMaxRequestsPerEndpoint] = useState<number>(DEFAULT_SETTINGS.maxRequestsPerEndpoint);
+  const [maxTotalRequests, setMaxTotalRequests] = useState<number>(DEFAULT_SETTINGS.maxTotalRequests);
   const { theme, setTheme } = useTheme();
 
   const {
@@ -62,8 +64,19 @@ export default function App() {
       setJwtHeaders(settings.jwtHeaders);
       setTokenPrefixes(settings.tokenPrefixes ?? DEFAULT_SETTINGS.tokenPrefixes);
       setSessionRetentionHours(settings.sessionRetentionHours);
+      setMaxRequestsPerEndpoint(settings.maxRequestsPerEndpoint ?? DEFAULT_SETTINGS.maxRequestsPerEndpoint);
+      setMaxTotalRequests(settings.maxTotalRequests ?? DEFAULT_SETTINGS.maxTotalRequests);
+      
+      // Initialize GC config from settings
+      updateGCConfig({
+        maxRequestsPerEndpoint: settings.maxRequestsPerEndpoint ?? DEFAULT_SETTINGS.maxRequestsPerEndpoint,
+        maxTotalRequests: settings.maxTotalRequests ?? DEFAULT_SETTINGS.maxTotalRequests,
+      });
+      
       // Initial cleanup on load
       cleanupOldSessions(settings.sessionRetentionHours);
+      // Also run GC to enforce limits on existing data
+      garbageCollectRequests();
     });
   }, [cleanupOldSessions]);
 
@@ -75,11 +88,27 @@ export default function App() {
     return () => clearInterval(interval);
   }, [sessionRetentionHours, cleanupOldSessions]);
 
-  const handleSaveSettings = async (settings: { jwtHeaders: string[]; tokenPrefixes: string[]; sessionRetentionHours: number }) => {
+  const handleSaveSettings = async (settings: { 
+    jwtHeaders: string[]; 
+    tokenPrefixes: string[]; 
+    sessionRetentionHours: number;
+    maxRequestsPerEndpoint: number;
+    maxTotalRequests: number;
+  }) => {
     await updateSettings(settings);
     setJwtHeaders(settings.jwtHeaders);
     setTokenPrefixes(settings.tokenPrefixes);
     setSessionRetentionHours(settings.sessionRetentionHours);
+    setMaxRequestsPerEndpoint(settings.maxRequestsPerEndpoint);
+    setMaxTotalRequests(settings.maxTotalRequests);
+    
+    // Update GC config and run GC immediately with new limits
+    updateGCConfig({
+      maxRequestsPerEndpoint: settings.maxRequestsPerEndpoint,
+      maxTotalRequests: settings.maxTotalRequests,
+    });
+    garbageCollectRequests();
+    
     setMainTab("requests");
   };
 
@@ -242,6 +271,8 @@ export default function App() {
             jwtHeaders={jwtHeaders}
             tokenPrefixes={tokenPrefixes}
             sessionRetentionHours={sessionRetentionHours}
+            maxRequestsPerEndpoint={maxRequestsPerEndpoint}
+            maxTotalRequests={maxTotalRequests}
             onSave={handleSaveSettings} 
           />
         </TabsContent>

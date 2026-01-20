@@ -2,12 +2,10 @@
 // Sessions are derived from requests - no separate sessions collection needed
 
 export {
-  requestsCollection,
-  collectionQueryClient,
-  addRequest,
-  generateUrlPattern,
-  parsePageUrl,
+    addRequest, collectionQueryClient, garbageCollectRequests, generateUrlPattern,
+    parsePageUrl, requestsCollection, updateGCConfig
 } from "./collections";
 
 export { useRequestStore } from "./useRequestStore";
-export type { RequestFilters, MethodFilter, SortOption } from "./useRequestStore";
+export type { MethodFilter, RequestFilters, SortOption } from "./useRequestStore";
+

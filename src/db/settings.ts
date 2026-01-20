@@ -6,6 +6,10 @@ export interface UserSettings {
   tokenPrefixes: string[];
   theme: "light" | "dark" | "system";
   sessionRetentionHours: number;
+  /** Maximum requests to keep per URL pattern (endpoint). Older requests are garbage collected. */
+  maxRequestsPerEndpoint: number;
+  /** Maximum total requests to keep across all endpoints */
+  maxTotalRequests: number;
 }
 
 const db = new Dexie("RequestVisualizerSettings") as Dexie & {
@@ -22,6 +26,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   tokenPrefixes: ["Bearer", "Token", "JWT"],
   theme: "system",
   sessionRetentionHours: 24,
+  maxRequestsPerEndpoint: 50,
+  maxTotalRequests: 500,
 };
 
 export async function getSettings(): Promise<UserSettings> {
