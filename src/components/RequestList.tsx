@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Clock, Key, Search, X, Copy, Check, Filter, Bookmark, CheckSquare, Square, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock, Key, Search, X, Copy, Check, Filter, Bookmark, CheckSquare, Square, ArrowUp, ArrowDown, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { copyToClipboard } from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CapturedRequest, RequestGroup } from "@/types/request";
 import { extractJWTFromHeaders } from "@/lib/jwt";
-import type { RequestFilters, MethodFilter, SortOption } from "@/lib/tanstackdb";
+import { ALL_SEARCH_FIELDS, SEARCH_FIELD_LABELS } from "@/lib/tanstackdb";
+import type { RequestFilters, MethodFilter, SearchField, SortOption, StatusFilter } from "@/lib/tanstackdb";
 import { safePathname } from "@/lib/url";
 import { formatDuration, formatSize, formatRelativeTime } from "@/lib/format";
 import { getStatusDotColor, getGroupStatusColor } from "@/lib/status";
@@ -358,14 +361,14 @@ export function RequestList({
     <div className="h-full flex flex-col overflow-hidden">
       {/* Search and Filter Bar */}
       <div className="px-2 py-2 border-b border-border space-y-2 shrink-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
             <input
               type="text"
               value={filters.search}
               onChange={(e) => updateFilter("search", e.target.value)}
-              placeholder="Search endpoints..."
+              placeholder={`Search ${filters.searchFields.map(f => SEARCH_FIELD_LABELS[f]).join(", ")}...`}
               className="w-full pl-7 pr-7 py-1 text-xs bg-background border border-border rounded"
             />
             {filters.search && (
@@ -377,6 +380,45 @@ export function RequestList({
               </button>
             )}
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  "shrink-0 p-1.5 rounded border border-border hover:bg-accent",
+                  filters.searchFields.length < ALL_SEARCH_FIELDS.length && "border-primary text-primary"
+                )}
+                title="Choose search fields"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-52 p-2">
+              <p className="text-xs font-medium mb-2 px-1">Search in</p>
+              <div className="flex flex-col gap-1">
+                {ALL_SEARCH_FIELDS.map((field) => {
+                  const isChecked = filters.searchFields.includes(field);
+                  const toggleField = () => {
+                    const next = isChecked
+                      ? filters.searchFields.filter((f) => f !== field)
+                      : [...filters.searchFields, field];
+                    updateFilter("searchFields", next as SearchField[]);
+                  };
+                  return (
+                    <label
+                      key={field}
+                      className="flex items-center gap-2 px-1 py-1 rounded hover:bg-accent cursor-pointer text-xs"
+                    >
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={toggleField}
+                      />
+                      {SEARCH_FIELD_LABELS[field]}
+                    </label>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <select
@@ -392,6 +434,17 @@ export function RequestList({
             <option value="DELETE">DELETE</option>
             <option value="OPTIONS">OPTIONS</option>
             <option value="HEAD">HEAD</option>
+          </select>
+          <select
+            value={filters.status}
+            onChange={(e) => updateFilter("status", e.target.value as StatusFilter)}
+            className="px-2 py-1 text-xs bg-background border border-border rounded"
+          >
+            <option value="ALL">All Status</option>
+            <option value="2xx">2xx Success</option>
+            <option value="3xx">3xx Redirect</option>
+            <option value="4xx">4xx Client Error</option>
+            <option value="5xx">5xx Server Error</option>
           </select>
           {routeSegments.length > 0 && (
             <select

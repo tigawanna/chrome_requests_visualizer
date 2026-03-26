@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLiveQuery } from "@tanstack/react-db";
-import { eq, ilike, or } from "@tanstack/db";
+import { and, eq, gte, ilike, lt, or } from "@tanstack/db";
 import type { CapturedRequest, RequestGroup, PageSession, DomainGroup } from "@/types/request";
 import {
   requestsCollection,
@@ -9,22 +9,47 @@ import {
   parsePageUrl,
 } from "./collections";
 
-// Filter types
 export type MethodFilter = "ALL" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD";
+export type StatusFilter = "ALL" | "2xx" | "3xx" | "4xx" | "5xx";
 export type SortOption = "time-desc" | "time-asc" | "method" | "status";
+export type SearchField = "url" | "method" | "requestBody" | "responseBody" | "requestHeaders" | "responseHeaders";
+
+export const ALL_SEARCH_FIELDS: SearchField[] = [
+  "url", "method", "requestBody", "responseBody", "requestHeaders", "responseHeaders",
+];
+
+export const SEARCH_FIELD_LABELS: Record<SearchField, string> = {
+  url: "URL",
+  method: "Method",
+  requestBody: "Request Body",
+  responseBody: "Response Body",
+  requestHeaders: "Request Headers",
+  responseHeaders: "Response Headers",
+};
 
 export interface RequestFilters {
   search: string;
+  searchFields: SearchField[];
   method: MethodFilter;
+  status: StatusFilter;
   segment: string;
   sortBy: SortOption;
 }
 
 const defaultFilters: RequestFilters = {
   search: "",
+  searchFields: [...ALL_SEARCH_FIELDS],
   method: "ALL",
+  status: "ALL",
   segment: "ALL",
   sortBy: "time-desc",
+};
+
+const STATUS_RANGE_MAP: Record<Exclude<StatusFilter, "ALL">, [number, number]> = {
+  "2xx": [200, 300],
+  "3xx": [300, 400],
+  "4xx": [400, 500],
+  "5xx": [500, 600],
 };
 
 // Helper to extract data from useLiveQuery result
@@ -86,13 +111,10 @@ export function useRequestStore() {
         query = query.where(({ req }) => eq(req.method, filters.method));
       }
 
-      // Search filter - case-insensitive search in URL or method
-      if (filters.search) {
-        query = query.where(({ req }) => 
-          or(
-            ilike(req.url, `%${filters.search}%`),
-            ilike(req.method, `%${filters.search}%`)
-          )
+      if (filters.status !== "ALL") {
+        const [min, max] = STATUS_RANGE_MAP[filters.status];
+        query = query.where(({ req }) =>
+          and(gte(req.status, min), lt(req.status, max))
         );
       }
 
@@ -111,14 +133,26 @@ export function useRequestStore() {
 
       return query;
     },
-    [filters.method, filters.search, filters.segment, sortDir]
+    [filters.method, filters.status, filters.segment, sortDir]
   );
 
-  // Extract filtered data - apply additional sorting if needed
   const filteredRequests = useMemo(() => {
     let result = extractRequestsArray(filteredResult);
 
-    // Apply method/status sorting client-side (startTime sorting done in query)
+    if (filters.search && filters.searchFields.length > 0) {
+      const term = filters.search.toLowerCase();
+      const fields = new Set(filters.searchFields);
+      result = result.filter((req) => {
+        if (fields.has("url") && req.url.toLowerCase().includes(term)) return true;
+        if (fields.has("method") && req.method.toLowerCase().includes(term)) return true;
+        if (fields.has("requestBody") && req.requestBody?.toLowerCase().includes(term)) return true;
+        if (fields.has("responseBody") && req.responseBody?.toLowerCase().includes(term)) return true;
+        if (fields.has("requestHeaders") && JSON.stringify(req.requestHeaders).toLowerCase().includes(term)) return true;
+        if (fields.has("responseHeaders") && JSON.stringify(req.responseHeaders).toLowerCase().includes(term)) return true;
+        return false;
+      });
+    }
+
     if (filters.sortBy === "method") {
       result.sort((a, b) => a.method.localeCompare(b.method));
     } else if (filters.sortBy === "status") {
@@ -126,7 +160,7 @@ export function useRequestStore() {
     }
 
     return result;
-  }, [filteredResult, filters.sortBy]);
+  }, [filteredResult, filters.search, filters.searchFields, filters.sortBy]);
 
   // Filtered grouped requests
   const filteredGroupedRequests: RequestGroup[] = useMemo(() => {

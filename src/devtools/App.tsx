@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { URLInspector } from "@/components/URLInspector";
 import { DEFAULT_SETTINGS, getSettings, updateSettings } from "@/db/settings";
+import { isDevMode } from "@/lib/extension";
 import { useNetworkCapture } from "@/hooks/useNetworkCapture";
 import { garbageCollectRequests, updateGCConfig, useRequestStore } from "@/lib/tanstackdb";
 import { Globe, Layers, Link2, List, Monitor, Moon, Settings as SettingsIcon, Sun, Trash2, X } from "lucide-react";
@@ -117,6 +118,11 @@ export default function App() {
       <header className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2">
           <h1 className="text-sm font-semibold">Requests Visualizer</h1>
+          {isDevMode() && (
+            <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30">
+              dev
+            </span>
+          )}
           <span className="text-xs text-muted-foreground">
             {requests.length} requests
           </span>

@@ -7,5 +7,6 @@ export {
 } from "./collections";
 
 export { useRequestStore } from "./useRequestStore";
-export type { MethodFilter, RequestFilters, SortOption } from "./useRequestStore";
+export { ALL_SEARCH_FIELDS, SEARCH_FIELD_LABELS } from "./useRequestStore";
+export type { MethodFilter, RequestFilters, SearchField, SortOption, StatusFilter } from "./useRequestStore";
 
