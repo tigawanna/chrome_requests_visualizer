@@ -1,3 +1,5 @@
+export type ResourceType = "xhr" | "fetch" | "document" | "script" | "image";
+
 export interface CapturedRequest {
   id: string;
   url: string;
@@ -8,11 +10,13 @@ export interface CapturedRequest {
   responseHeaders: Record<string, string>;
   requestBody: string | null;
   responseBody: string | null;
+  responseEncoding: string | null;
+  mimeType: string;
   startTime: number;
   endTime: number;
   duration: number;
   size: number;
-  type: string;
+  type: ResourceType;
   urlPattern: string;
   initiator: string;
   pageUrl: string;

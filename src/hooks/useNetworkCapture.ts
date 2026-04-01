@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
-import type { CapturedRequest } from "@/types/request";
+import type { CapturedRequest, ResourceType } from "@/types/request";
 
 type AddRequestFn = (request: Omit<CapturedRequest, "id" | "urlPattern">) => CapturedRequest;
 type OnNavigateFn = (newUrl: string) => void;
@@ -47,9 +47,8 @@ export function useNetworkCapture(addRequest: AddRequestFn, onNavigate: OnNaviga
     (har: chrome.devtools.network.Request) => {
       const resourceType = har._resourceType?.toLowerCase() ?? "";
       
-      // Capture XHR, fetch, and document requests
-      const allowedTypes = ["xhr", "fetch", "document"];
-      if (!allowedTypes.includes(resourceType)) {
+      const allowedTypes: ResourceType[] = ["xhr", "fetch", "document", "script", "image"];
+      if (!allowedTypes.includes(resourceType as ResourceType)) {
         return;
       }
 
@@ -62,17 +61,20 @@ export function useNetworkCapture(addRequest: AddRequestFn, onNavigate: OnNaviga
         responseHeaders: parseHeaders(har.response.headers),
         requestBody: har.request.postData?.text ?? null,
         responseBody: null,
+        responseEncoding: null,
+        mimeType: har.response.content.mimeType ?? "",
         startTime: new Date(har.startedDateTime).getTime(),
         endTime: new Date(har.startedDateTime).getTime() + har.time,
         duration: har.time,
         size: har.response.content.size,
-        type: resourceType,
+        type: resourceType as ResourceType,
         initiator: typeof har._initiator === "object" ? har._initiator?.type ?? "unknown" : "unknown",
         pageUrl: currentPageUrl.current,
       };
 
-      har.getContent((content) => {
+      har.getContent((content, encoding) => {
         request.responseBody = content;
+        request.responseEncoding = encoding || null;
         addRequest(request);
       });
     },

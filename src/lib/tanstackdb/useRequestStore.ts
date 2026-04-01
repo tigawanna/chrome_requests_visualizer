@@ -11,6 +11,7 @@ import {
 
 export type MethodFilter = "ALL" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD";
 export type StatusFilter = "ALL" | "2xx" | "3xx" | "4xx" | "5xx";
+export type TypeFilter = "ALL" | "xhr" | "fetch" | "document" | "script" | "image";
 export type SortOption = "time-desc" | "time-asc" | "method" | "status";
 export type SearchField = "url" | "method" | "requestBody" | "responseBody" | "requestHeaders" | "responseHeaders";
 
@@ -32,6 +33,7 @@ export interface RequestFilters {
   searchFields: SearchField[];
   method: MethodFilter;
   status: StatusFilter;
+  type: TypeFilter;
   segment: string;
   sortBy: SortOption;
 }
@@ -41,6 +43,7 @@ const defaultFilters: RequestFilters = {
   searchFields: [...ALL_SEARCH_FIELDS],
   method: "ALL",
   status: "ALL",
+  type: "ALL",
   segment: "ALL",
   sortBy: "time-desc",
 };
@@ -106,7 +109,6 @@ export function useRequestStore() {
     (q) => {
       let query = q.from({ req: requestsCollection });
 
-      // Method filter
       if (filters.method !== "ALL") {
         query = query.where(({ req }) => eq(req.method, filters.method));
       }
@@ -118,7 +120,10 @@ export function useRequestStore() {
         );
       }
 
-      // Segment filter - case-insensitive check if URL contains segment
+      if (filters.type !== "ALL") {
+        query = query.where(({ req }) => eq(req.type, filters.type));
+      }
+
       if (filters.segment !== "ALL") {
         query = query.where(({ req }) => 
           or(
@@ -133,7 +138,7 @@ export function useRequestStore() {
 
       return query;
     },
-    [filters.method, filters.status, filters.segment, sortDir]
+    [filters.method, filters.status, filters.type, filters.segment, sortDir]
   );
 
   const filteredRequests = useMemo(() => {

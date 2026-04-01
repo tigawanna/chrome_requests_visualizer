@@ -6,8 +6,8 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { extractJWTFromHeaders } from "@/lib/jwt";
 import { cn } from "@/lib/utils";
 import type { CapturedRequest } from "@/types/request";
-import { Check, Copy, FileJson, Play } from "lucide-react";
-import { useState } from "react";
+import { Check, Copy, FileJson, Image as ImageIcon, Play } from "lucide-react";
+import { useMemo, useState } from "react";
 import { JWTDecoder } from "./JWTDecoder";
 import { ReplayRequest } from "./ReplayRequest";
 
@@ -130,6 +130,36 @@ function CodeBlock({ content, language, title }: { content: string; language?: s
   );
 }
 
+function ImagePreview({ request }: { request: CapturedRequest }) {
+  const dataUrl = useMemo(() => {
+    if (!request.responseBody || !request.mimeType) return null;
+    if (request.responseEncoding === "base64") {
+      return `data:${request.mimeType};base64,${request.responseBody}`;
+    }
+    return request.url;
+  }, [request.responseBody, request.responseEncoding, request.mimeType, request.url]);
+
+  if (!dataUrl) {
+    return <p className="text-muted-foreground text-sm">Unable to preview image</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span>MIME: <strong className="text-foreground">{request.mimeType}</strong></span>
+        <span>Size: <strong className="text-foreground">{request.size}B</strong></span>
+      </div>
+      <div className="border border-border rounded-lg overflow-hidden bg-[repeating-conic-gradient(#80808015_0%_25%,transparent_0%_50%)] bg-size-[16px_16px]">
+        <img
+          src={dataUrl}
+          alt={request.url}
+          className="max-w-full max-h-96 object-contain mx-auto block"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
   const [tab, setTab] = useState("headers");
   const [showReplay, setShowReplay] = useState(false);
@@ -137,6 +167,8 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
   const jwtInfo = extractJWTFromHeaders(request.requestHeaders, jwtHeaders);
   const queryParams = parseQueryParams(request.url);
   const hasQueryParams = Object.keys(queryParams).length > 0;
+  const isImage = request.type === "image";
+  const isScript = request.type === "script";
 
   const handleCopyAsJson = async () => {
     const json = JSON.stringify(buildRequestJson(request), null, 2);
@@ -184,6 +216,7 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
           {hasQueryParams && <TabsTrigger value="params">Query Params</TabsTrigger>}
           <TabsTrigger value="request">Request</TabsTrigger>
           <TabsTrigger value="response">Response</TabsTrigger>
+          {isImage && <TabsTrigger value="preview"><ImageIcon className="w-3 h-3 mr-1" />Preview</TabsTrigger>}
           {jwtInfo && <TabsTrigger value="jwt">JWT</TabsTrigger>}
         </TabsList>
 
@@ -221,11 +254,21 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
 
             <TabsContent value="response" className="mt-0">
               {request.responseBody ? (
-                <CodeBlock content={request.responseBody} language="json" title="Response Body" />
+                <CodeBlock
+                  content={request.responseBody}
+                  language={isScript ? "javascript" : "json"}
+                  title={isScript ? "Script Content" : "Response Body"}
+                />
               ) : (
                 <p className="text-muted-foreground text-sm">No response body</p>
               )}
             </TabsContent>
+
+            {isImage && (
+              <TabsContent value="preview" className="mt-0">
+                <ImagePreview request={request} />
+              </TabsContent>
+            )}
 
             {jwtInfo && (
               <TabsContent value="jwt" className="mt-0">
