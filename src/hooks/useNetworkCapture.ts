@@ -67,6 +67,9 @@ export function useNetworkCapture(addRequest: AddRequestFn, onNavigate: OnNaviga
         endTime: new Date(har.startedDateTime).getTime() + har.time,
         duration: har.time,
         size: har.response.content.size,
+        requestSize: har.request.bodySize > 0
+          ? har.request.bodySize
+          : har.request.postData?.text?.length ?? 0,
         type: resourceType as ResourceType,
         initiator: typeof har._initiator === "object" ? har._initiator?.type ?? "unknown" : "unknown",
         pageUrl: currentPageUrl.current,

@@ -112,7 +112,9 @@ function RequestRow({
           <Clock className="w-3 h-3" />
           {formatDuration(request.duration)}
         </span>
-        <span className="w-14 text-right text-xs">{formatSize(request.size)}</span>
+        <span className="w-14 text-right text-xs" title={`Response: ${formatSize(request.size)}${request.requestSize > 0 ? ` | Payload: ${formatSize(request.requestSize)}` : ''}`}>
+          {formatSize(request.size)}
+        </span>
       </div>
     </div>
   );

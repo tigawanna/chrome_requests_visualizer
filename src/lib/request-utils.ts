@@ -1,5 +1,6 @@
 // Request-related utility functions
 import type { CapturedRequest, PageSession, DomainGroup } from "@/types/request";
+import { formatSize } from "@/lib/format";
 
 /**
  * Build JSON summary of requests for copying
@@ -10,7 +11,8 @@ export function buildRequestsSummaryJson(requests: CapturedRequest[]) {
     url: r.url,
     status: r.status,
     duration: `${r.duration.toFixed(0)}ms`,
-    size: `${r.size}B`,
+    responseSize: formatSize(r.size),
+    ...(r.requestSize > 0 && { requestPayloadSize: formatSize(r.requestSize) }),
   }));
 }
 

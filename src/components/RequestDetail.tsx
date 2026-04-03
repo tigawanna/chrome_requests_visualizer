@@ -7,6 +7,7 @@ import { extractJWTFromHeaders } from "@/lib/jwt";
 import { cn } from "@/lib/utils";
 import type { CapturedRequest } from "@/types/request";
 import { Check, Copy, FileJson, Image as ImageIcon, Play } from "lucide-react";
+import { formatSize } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { JWTDecoder } from "./JWTDecoder";
 import { ReplayRequest } from "./ReplayRequest";
@@ -62,7 +63,8 @@ function buildRequestJson(request: CapturedRequest) {
     method: request.method,
     status: `${request.status} ${request.statusText}`,
     duration: `${request.duration.toFixed(0)}ms`,
-    size: `${request.size}B`,
+    responseSize: formatSize(request.size),
+    requestPayloadSize: request.requestSize > 0 ? formatSize(request.requestSize) : null,
     type: request.type,
     requestHeaders: headersToArray(request.requestHeaders),
     responseHeaders: headersToArray(request.responseHeaders),
@@ -147,7 +149,7 @@ function ImagePreview({ request }: { request: CapturedRequest }) {
     <div className="space-y-3">
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         <span>MIME: <strong className="text-foreground">{request.mimeType}</strong></span>
-        <span>Size: <strong className="text-foreground">{request.size}B</strong></span>
+        <span>Size: <strong className="text-foreground">{formatSize(request.size)}</strong></span>
       </div>
       <div className="border border-border rounded-lg overflow-hidden bg-[repeating-conic-gradient(#80808015_0%_25%,transparent_0%_50%)] bg-size-[16px_16px]">
         <img
@@ -205,7 +207,10 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
             request.status >= 400 && "text-red-500"
           )}>{request.status} {request.statusText}</strong></span>
           <span>Duration: <strong>{request.duration.toFixed(0)}ms</strong></span>
-          <span>Size: <strong>{request.size}B</strong></span>
+          <span>Response: <strong>{formatSize(request.size)}</strong></span>
+          {request.requestSize > 0 && (
+            <span>Payload: <strong>{formatSize(request.requestSize)}</strong></span>
+          )}
           <span>Type: <strong>{request.type}</strong></span>
         </div>
       </div>

@@ -16,6 +16,7 @@ export interface CapturedRequest {
   endTime: number;
   duration: number;
   size: number;
+  requestSize: number;
   type: ResourceType;
   urlPattern: string;
   initiator: string;
