@@ -1,4 +1,18 @@
-export type ResourceType = "xhr" | "fetch" | "document" | "script" | "image";
+export type ResourceType = "api" | "document" | "script" | "image";
+
+export const RESOURCE_TYPE_BADGE: Record<ResourceType, string> = {
+  api: "Fetch/XHR",
+  document: "doc",
+  script: "script",
+  image: "image",
+};
+
+export const RESOURCE_TYPE_DISPLAY: Record<ResourceType, string> = {
+  api: "Fetch/XHR",
+  document: "document",
+  script: "script",
+  image: "image",
+};
 
 export interface CapturedRequest {
   id: string;

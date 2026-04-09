@@ -11,7 +11,7 @@ import {
 
 export type MethodFilter = "ALL" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD";
 export type StatusFilter = "ALL" | "2xx" | "3xx" | "4xx" | "5xx";
-export type TypeFilter = "ALL" | "xhr" | "fetch" | "document" | "script" | "image";
+export type TypeFilter = "ALL" | "api" | "document" | "script" | "image";
 export type SortOption = "time-desc" | "time-asc" | "method" | "status";
 export type SearchField = "url" | "method" | "requestBody" | "responseBody" | "requestHeaders" | "responseHeaders";
 
@@ -43,7 +43,7 @@ const defaultFilters: RequestFilters = {
   searchFields: [...ALL_SEARCH_FIELDS],
   method: "ALL",
   status: "ALL",
-  type: "ALL",
+  type: "api",
   segment: "ALL",
   sortBy: "time-desc",
 };

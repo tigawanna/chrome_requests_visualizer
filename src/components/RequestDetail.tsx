@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { copyToClipboard } from "@/lib/clipboard";
 import { extractJWTFromHeaders } from "@/lib/jwt";
 import { cn } from "@/lib/utils";
-import type { CapturedRequest } from "@/types/request";
+import { RESOURCE_TYPE_DISPLAY, type CapturedRequest } from "@/types/request";
 import { Check, Copy, FileJson, Image as ImageIcon, Play } from "lucide-react";
 import { formatSize } from "@/lib/format";
 import { useMemo, useState } from "react";
@@ -65,7 +65,7 @@ function buildRequestJson(request: CapturedRequest) {
     duration: `${request.duration.toFixed(0)}ms`,
     responseSize: formatSize(request.size),
     requestPayloadSize: request.requestSize > 0 ? formatSize(request.requestSize) : null,
-    type: request.type,
+    type: RESOURCE_TYPE_DISPLAY[request.type],
     requestHeaders: headersToArray(request.requestHeaders),
     responseHeaders: headersToArray(request.responseHeaders),
     requestBody: truncateBody(requestBodyParsed),
@@ -211,7 +211,7 @@ export function RequestDetail({ request, jwtHeaders }: RequestDetailProps) {
           {request.requestSize > 0 && (
             <span>Payload: <strong>{formatSize(request.requestSize)}</strong></span>
           )}
-          <span>Type: <strong>{request.type}</strong></span>
+          <span>Type: <strong>{RESOURCE_TYPE_DISPLAY[request.type]}</strong></span>
         </div>
       </div>
 

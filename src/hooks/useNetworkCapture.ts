@@ -47,10 +47,15 @@ export function useNetworkCapture(addRequest: AddRequestFn, onNavigate: OnNaviga
     (har: chrome.devtools.network.Request) => {
       const resourceType = har._resourceType?.toLowerCase() ?? "";
       
-      const allowedTypes: ResourceType[] = ["xhr", "fetch", "document", "script", "image"];
-      if (!allowedTypes.includes(resourceType as ResourceType)) {
+      const allowedHar = ["xhr", "fetch", "document", "script", "image"];
+      if (!allowedHar.includes(resourceType)) {
         return;
       }
+
+      const mappedType: ResourceType =
+        resourceType === "xhr" || resourceType === "fetch"
+          ? "api"
+          : (resourceType as ResourceType);
 
       const request: Omit<CapturedRequest, "id" | "urlPattern"> = {
         url: har.request.url,
@@ -70,7 +75,7 @@ export function useNetworkCapture(addRequest: AddRequestFn, onNavigate: OnNaviga
         requestSize: har.request.bodySize > 0
           ? har.request.bodySize
           : har.request.postData?.text?.length ?? 0,
-        type: resourceType as ResourceType,
+        type: mappedType,
         initiator: typeof har._initiator === "object" ? har._initiator?.type ?? "unknown" : "unknown",
         pageUrl: currentPageUrl.current,
       };

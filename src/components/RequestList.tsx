@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { CapturedRequest, RequestGroup } from "@/types/request";
+import { RESOURCE_TYPE_BADGE, type CapturedRequest, type RequestGroup } from "@/types/request";
 import { extractJWTFromHeaders } from "@/lib/jwt";
 import { ALL_SEARCH_FIELDS, SEARCH_FIELD_LABELS } from "@/lib/tanstackdb";
 import type { RequestFilters, MethodFilter, SearchField, SortOption, StatusFilter, TypeFilter } from "@/lib/tanstackdb";
@@ -91,14 +91,13 @@ function RequestRow({
       </span>
       <span className="w-14 text-muted-foreground font-mono text-xs">{request.method}</span>
       <span className={cn(
-        "w-10 text-center text-[10px] font-medium rounded px-1 py-0.5 shrink-0",
-        request.type === "xhr" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-        request.type === "fetch" && "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+        "min-w-19 text-center text-[10px] font-medium rounded px-1 py-0.5 shrink-0",
+        request.type === "api" && "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
         request.type === "document" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
         request.type === "script" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
         request.type === "image" && "bg-pink-500/15 text-pink-600 dark:text-pink-400",
       )}>
-        {request.type === "document" ? "doc" : request.type}
+        {RESOURCE_TYPE_BADGE[request.type]}
       </span>
       <span className="flex-1 truncate font-mono text-xs" title={request.url}>
         {safePathname(request.url)}
@@ -464,8 +463,7 @@ export function RequestList({
             className="px-2 py-1 text-xs bg-background border border-border rounded"
           >
             <option value="ALL">All Types</option>
-            <option value="xhr">XHR</option>
-            <option value="fetch">Fetch</option>
+            <option value="api">Fetch/XHR</option>
             <option value="document">Document</option>
             <option value="script">Script</option>
             <option value="image">Image</option>
